@@ -2,8 +2,7 @@
 node_modules/
 */node_modules/
 
-# Database
-*.db
+# Database journal (temp file)
 *.db-journal
 
 # Build outputs
