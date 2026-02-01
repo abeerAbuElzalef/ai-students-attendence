@@ -5,7 +5,7 @@ import { FiPlus, FiEdit2, FiTrash2, FiFolder, FiX, FiCheck, FiUsers } from 'reac
 import toast from 'react-hot-toast';
 import { classApi } from '../api';
 
-export default function ClassManager({ selectedClass, onSelectClass, onClassesChange }) {
+export default function ClassManager({ selectedClass, onSelectClass, onClassesChange, refreshTrigger }) {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -16,6 +16,13 @@ export default function ClassManager({ selectedClass, onSelectClass, onClassesCh
   useEffect(() => {
     loadClasses();
   }, []);
+
+  // Refresh classes when refreshTrigger changes (e.g., when students are added/removed)
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      loadClasses();
+    }
+  }, [refreshTrigger]);
 
   const loadClasses = async () => {
     try {

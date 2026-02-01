@@ -92,6 +92,12 @@ function AppContent() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [classRefreshTrigger, setClassRefreshTrigger] = useState(0);
+
+  // Called when students are added/removed to refresh class student counts
+  const handleStudentChange = () => {
+    setClassRefreshTrigger(prev => prev + 1);
+  };
 
   if (loading) {
     return (
@@ -233,6 +239,7 @@ function AppContent() {
               selectedClass={selectedClass}
               onSelectClass={setSelectedClass}
               onClassesChange={setClasses}
+              refreshTrigger={classRefreshTrigger}
             />
           </div>
 
@@ -283,6 +290,7 @@ function AppContent() {
                       classId={selectedClass}
                       className={selectedClassName}
                       classes={classes}
+                      onStudentChange={handleStudentChange}
                     />
                   )}
                   

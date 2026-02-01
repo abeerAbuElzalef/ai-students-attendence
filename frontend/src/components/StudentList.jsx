@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { studentApi } from '../api';
 
-export default function StudentList({ classId, className, classes }) {
+export default function StudentList({ classId, className, classes, onStudentChange }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -28,10 +28,20 @@ export default function StudentList({ classId, className, classes }) {
     }
   }, [classId]);
 
+  // Hebrew-aware alphabetical sort
+  const sortStudentsAlphabetically = (studentList) => {
+    return [...studentList].sort((a, b) => 
+      a.name.localeCompare(b.name, 'he')
+    );
+  };
+
   const loadStudents = async () => {
     try {
       const response = await studentApi.getAll(classId);
-      setStudents(response.data);
+      const sortedStudents = sortStudentsAlphabetically(response.data);
+      setStudents(sortedStudents);
+      // Notify parent about student count change
+      onStudentChange?.(sortedStudents.length);
     } catch (error) {
       toast.error('שגיאה בטעינת התלמידים');
     }
@@ -233,14 +243,25 @@ export default function StudentList({ classId, className, classes }) {
           </div>
         </div>
 
-        {/* Search */}
-        <input
-          type="text"
-          placeholder="חיפוש תלמיד..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="input-field"
-        />
+        {/* Search with clear button */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="חיפוש תלמיד..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-field pl-10"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              title="נקה חיפוש"
+            >
+              <FiX size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Student list */}
