@@ -248,8 +248,8 @@ export default function StudentList({ classId, className, classes }) {
             {/* Table header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-800/50">
               <div className="col-span-1 text-sm font-semibold text-slate-400">#</div>
-              <div className="col-span-9 text-sm font-semibold text-slate-400">שם התלמיד</div>
-              <div className="col-span-2 text-sm font-semibold text-slate-400">פעולות</div>
+              <div className="col-span-7 text-sm font-semibold text-slate-400">שם התלמיד</div>
+              <div className="col-span-4 text-sm font-semibold text-slate-400 text-left">פעולות</div>
             </div>
 
             {/* Student rows */}
@@ -267,7 +267,7 @@ export default function StudentList({ classId, className, classes }) {
                   
                   {editingStudent?._id === student._id ? (
                     <>
-                      <div className="col-span-9">
+                      <div className="col-span-7">
                         <input
                           type="text"
                           value={editingStudent.name}
@@ -276,36 +276,42 @@ export default function StudentList({ classId, className, classes }) {
                           autoFocus
                         />
                       </div>
-                      <div className="col-span-2 flex gap-2">
+                      <div className="col-span-4 flex gap-2 justify-end">
                         <button
                           onClick={handleUpdateStudent}
-                          className="p-2 rounded-lg bg-success/20 text-success hover:bg-success/30 transition-colors"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-success/20 text-success hover:bg-success/30 transition-colors text-sm"
                         >
-                          <FiCheck size={16} />
+                          <FiCheck size={14} />
+                          <span>שמור</span>
                         </button>
                         <button
                           onClick={() => setEditingStudent(null)}
-                          className="p-2 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 transition-colors"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 transition-colors text-sm"
                         >
-                          <FiX size={16} />
+                          <FiX size={14} />
+                          <span>ביטול</span>
                         </button>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="col-span-9 font-medium">{student.name}</div>
-                      <div className="col-span-2 flex gap-2">
+                      <div className="col-span-7 font-medium">{student.name}</div>
+                      <div className="col-span-4 flex gap-2 justify-end">
                         <button
                           onClick={() => setEditingStudent(student)}
-                          className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white transition-colors text-sm"
+                          title="עריכה"
                         >
-                          <FiEdit2 size={16} />
+                          <FiEdit2 size={14} />
+                          <span>ערוך</span>
                         </button>
                         <button
                           onClick={() => handleDeleteStudent(student._id, student.name)}
-                          className="p-2 rounded-lg hover:bg-error/20 text-slate-400 hover:text-error transition-colors"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-error/20 hover:bg-error/30 text-error transition-colors text-sm"
+                          title="מחיקה"
                         >
-                          <FiTrash2 size={16} />
+                          <FiTrash2 size={14} />
+                          <span>מחק</span>
                         </button>
                       </div>
                     </>
