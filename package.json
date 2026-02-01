@@ -1,13 +1,14 @@
 {
   "name": "student-attendance-tracker",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Student attendance tracking system with Hebrew support and Israeli holiday detection",
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm install && npm run build",
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
   "keywords": ["attendance", "students", "hebrew", "calendar", "holidays"],
   "author": "",
