@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCalendar, FiUsers, FiDownload, FiBarChart2, FiLogOut, FiUser } from 'react-icons/fi';
+import { FiCalendar, FiUsers, FiDownload, FiBarChart2, FiLogOut, FiUser, FiMail, FiShield } from 'react-icons/fi';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
@@ -19,6 +19,72 @@ const tabs = [
   { id: 'stats', label: 'סטטיסטיקה', icon: FiBarChart2 },
   { id: 'export', label: 'ייצוא', icon: FiDownload },
 ];
+
+function UserProfile({ user, onLogout }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
+          <FiUser size={16} className="text-white" />
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-medium">{user?.name || 'משתמש'}</p>
+          <p className="text-xs text-slate-400">{user?.isAdmin ? 'מנהל' : 'מורה'}</p>
+        </div>
+      </button>
+
+      {/* User Details Dropdown */}
+      {showDetails && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="absolute left-0 top-full mt-2 w-72 glass rounded-xl p-4 shadow-xl z-50"
+        >
+          <div className="space-y-3">
+            <div className="text-center pb-3 border-b border-slate-700">
+              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mb-2">
+                <FiUser size={28} className="text-white" />
+              </div>
+              <h3 className="font-bold text-lg">{user?.name}</h3>
+              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                user?.isAdmin 
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                  : 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+              }`}>
+                {user?.isAdmin ? '👑 מנהל מערכת' : '👨‍🏫 מורה'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <FiMail size={16} className="text-slate-400" />
+                <span className="text-slate-300">{user?.email}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <FiShield size={16} className="text-slate-400" />
+                <span className="text-slate-300">תפקיד: {user?.role || 'teacher'}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={onLogout}
+              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+            >
+              <FiLogOut size={16} />
+              <span>התנתק</span>
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 function AppContent() {
   const { user, isAuthenticated, loading, logout } = useAuth();
@@ -68,23 +134,11 @@ function AppContent() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold gradient-text">מערכת נוכחות</h1>
-                  <p className="text-sm text-red-400">מצב מנהל</p>
+                  <p className="text-sm text-red-400">👑 מצב מנהל</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/30">
-                  <FiUser size={16} className="text-red-400" />
-                  <span className="text-sm font-medium text-red-400">{user?.name} (מנהל)</span>
-                </div>
-                <button
-                  onClick={logout}
-                  className="p-2.5 rounded-xl hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
-                  title="התנתק"
-                >
-                  <FiLogOut size={20} />
-                </button>
-              </div>
+              <UserProfile user={user} onLogout={logout} />
             </div>
           </div>
         </header>
@@ -164,20 +218,8 @@ function AppContent() {
               })}
             </nav>
 
-            {/* User menu */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50">
-                <FiUser size={16} className="text-slate-400" />
-                <span className="text-sm font-medium">{user?.name}</span>
-              </div>
-              <button
-                onClick={logout}
-                className="p-2.5 rounded-xl hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
-                title="התנתק"
-              >
-                <FiLogOut size={20} />
-              </button>
-            </div>
+            {/* User Profile */}
+            <UserProfile user={user} onLogout={logout} />
           </div>
         </div>
       </header>
@@ -199,7 +241,7 @@ function AppContent() {
             {!selectedClass && classes.length === 0 ? (
               <div className="glass rounded-2xl p-12 text-center">
                 <FiUsers size={48} className="mx-auto mb-4 text-slate-500" />
-                <h2 className="text-xl font-bold mb-2">ברוך הבא!</h2>
+                <h2 className="text-xl font-bold mb-2">ברוך הבא, {user?.name}!</h2>
                 <p className="text-slate-400 mb-4">התחל על ידי יצירת כיתה ראשונה</p>
               </div>
             ) : !selectedClass ? (
