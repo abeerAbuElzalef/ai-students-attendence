@@ -2,47 +2,84 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiUsers, FiFolder, FiActivity, FiTrash2, FiAlertTriangle,
-  FiUser, FiCalendar, FiDatabase, FiClock, FiShield
+  FiUser, FiDatabase, FiShield, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { adminApi } from '../api';
 import { useAuth } from '../context/AuthContext';
+
+const ITEMS_PER_PAGE = 20;
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
   const [teachers, setTeachers] = useState([]);
+  const [teachersPagination, setTeachersPagination] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [classesPagination, setClassesPagination] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
+  // Sorting and pagination state
+  const [teacherSortBy, setTeacherSortBy] = useState('firstName');
+  const [teacherPage, setTeacherPage] = useState(1);
+  const [classPage, setClassPage] = useState(1);
 
   useEffect(() => {
-    loadData();
+    loadDashboard();
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (activeTab === 'teachers') {
+      loadTeachers();
+    }
+  }, [activeTab, teacherSortBy, teacherPage]);
+
+  useEffect(() => {
+    if (activeTab === 'classes') {
+      loadClasses();
+    }
+  }, [activeTab, classPage]);
+
+  const loadDashboard = async () => {
     try {
-      const [dashboardRes, teachersRes, classesRes] = await Promise.all([
-        adminApi.getDashboard(),
-        adminApi.getTeachers(),
-        adminApi.getClasses()
-      ]);
+      const dashboardRes = await adminApi.getDashboard();
       setDashboard(dashboardRes.data);
-      setTeachers(teachersRes.data);
-      setClasses(classesRes.data);
     } catch (error) {
       toast.error('שגיאה בטעינת הנתונים');
     }
     setLoading(false);
   };
 
+  const loadTeachers = async () => {
+    try {
+      const res = await adminApi.getTeachers(teacherPage, ITEMS_PER_PAGE, teacherSortBy);
+      setTeachers(res.data.teachers || []);
+      setTeachersPagination(res.data.pagination);
+    } catch (error) {
+      toast.error('שגיאה בטעינת רשימת המורים');
+    }
+  };
+
+  const loadClasses = async () => {
+    try {
+      const res = await adminApi.getClasses(classPage, ITEMS_PER_PAGE);
+      setClasses(res.data.classes || []);
+      setClassesPagination(res.data.pagination);
+    } catch (error) {
+      toast.error('שגיאה בטעינת רשימת הכיתות');
+    }
+  };
+
   const handleDeleteTeacher = async (teacher) => {
+    const fullName = `${teacher.firstName} ${teacher.lastName}`;
     try {
       await adminApi.deleteTeacher(teacher._id);
-      toast.success(`המורה ${teacher.name} נמחק בהצלחה`);
+      toast.success(`המורה ${fullName} נמחק בהצלחה`);
       setDeleteConfirm(null);
-      loadData();
+      loadDashboard();
+      loadTeachers();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה במחיקה');
     }
@@ -53,7 +90,8 @@ export default function AdminDashboard() {
       await adminApi.deleteClass(cls._id);
       toast.success(`הכיתה ${cls.name} נמחקה בהצלחה`);
       setDeleteConfirm(null);
-      loadData();
+      loadDashboard();
+      loadClasses();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה במחיקה');
     }
@@ -68,6 +106,78 @@ export default function AdminDashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getTeacherFullName = (teacher) => {
+    return `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim();
+  };
+
+  // Pagination component
+  const Pagination = ({ pagination, onPageChange, label }) => {
+    if (!pagination || pagination.totalPages <= 1) return null;
+    
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50">
+        <div className="text-sm text-slate-400">
+          מציג {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1}-
+          {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} מתוך {pagination.totalItems} {label}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onPageChange(pagination.currentPage - 1)}
+            disabled={!pagination.hasPrevPage}
+            className={`p-2 rounded-lg transition-colors ${
+              pagination.hasPrevPage 
+                ? 'hover:bg-slate-700/50 text-slate-300' 
+                : 'text-slate-600 cursor-not-allowed'
+            }`}
+          >
+            <FiChevronRight size={20} />
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              let pageNum;
+              if (pagination.totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (pagination.currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                pageNum = pagination.totalPages - 4 + i;
+              } else {
+                pageNum = pagination.currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => onPageChange(pageNum)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                    pageNum === pagination.currentPage
+                      ? 'bg-primary-600 text-white'
+                      : 'hover:bg-slate-700/50 text-slate-400'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          
+          <button
+            onClick={() => onPageChange(pagination.currentPage + 1)}
+            disabled={!pagination.hasNextPage}
+            className={`p-2 rounded-lg transition-colors ${
+              pagination.hasNextPage 
+                ? 'hover:bg-slate-700/50 text-slate-300' 
+                : 'text-slate-600 cursor-not-allowed'
+            }`}
+          >
+            <FiChevronLeft size={20} />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -203,9 +313,16 @@ export default function AdminDashboard() {
                 {dashboard?.recentTeachers.slice(0, 5).map(teacher => (
                   <div key={teacher._id} className="glass-light rounded-xl p-3">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{teacher.name}</p>
-                        <p className="text-xs text-slate-400">{teacher.email}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                          <span className="text-sm font-bold text-white">
+                            {(teacher.firstName?.charAt(0) || '') + (teacher.lastName?.charAt(0) || '')}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{teacher.firstName} {teacher.lastName}</p>
+                          <p className="text-xs text-slate-400">{teacher.email}</p>
+                        </div>
                       </div>
                       <div className="text-left">
                         <p className="text-xs text-slate-400">התחברות אחרונה</p>
@@ -233,11 +350,8 @@ export default function AdminDashboard() {
                       <div>
                         <p className="font-medium">{cls.name}</p>
                         <p className="text-xs text-slate-400">
-                          {cls.teacher?.name || 'ללא מורה'}
+                          {cls.teacher ? `${cls.teacher.firstName} ${cls.teacher.lastName}` : 'ללא מורה'}
                         </p>
-                      </div>
-                      <div className="text-left text-xs text-slate-400">
-                        {cls.year}
                       </div>
                     </div>
                   </div>
@@ -258,7 +372,7 @@ export default function AdminDashboard() {
                 {dashboard?.classesPerTeacher.map(item => (
                   <div key={item._id} className="glass-light rounded-xl p-4 text-center">
                     <p className="text-2xl font-bold text-primary-400">{item.classCount}</p>
-                    <p className="text-sm font-medium mt-1">{item.teacherName}</p>
+                    <p className="text-sm font-medium mt-1">{item.teacherFirstName} {item.teacherLastName}</p>
                     <p className="text-xs text-slate-400">{item.teacherEmail}</p>
                   </div>
                 ))}
@@ -278,29 +392,71 @@ export default function AdminDashboard() {
             exit={{ opacity: 0, y: -20 }}
             className="glass rounded-2xl overflow-hidden"
           >
+            {/* Sort Options */}
+            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+              <h3 className="font-bold">רשימת מורים</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-400">מיון:</span>
+                <div className="flex rounded-xl overflow-hidden border border-slate-600">
+                  <button
+                    onClick={() => { setTeacherSortBy('firstName'); setTeacherPage(1); }}
+                    className={`px-4 py-2 text-sm transition-colors ${
+                      teacherSortBy === 'firstName'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    שם פרטי
+                  </button>
+                  <button
+                    onClick={() => { setTeacherSortBy('lastName'); setTeacherPage(1); }}
+                    className={`px-4 py-2 text-sm transition-colors ${
+                      teacherSortBy === 'lastName'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    שם משפחה
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="divide-y divide-slate-700/50">
               <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-800/50 text-sm font-semibold text-slate-400">
-                <div className="col-span-3">שם</div>
+                <div className="col-span-1">#</div>
+                <div className="col-span-3">שם מלא</div>
                 <div className="col-span-3">אימייל</div>
                 <div className="col-span-2">כיתות</div>
                 <div className="col-span-2">התחברות אחרונה</div>
-                <div className="col-span-2">פעולות</div>
+                <div className="col-span-1">פעולות</div>
               </div>
               
-              {teachers.map(teacher => {
+              {teachers.map((teacher, index) => {
                 const isCurrentUser = user && (user._id === teacher._id || user.email === teacher.email);
+                const fullName = getTeacherFullName(teacher);
+                const rowNum = ((teachersPagination?.currentPage || 1) - 1) * ITEMS_PER_PAGE + index + 1;
+                
                 return (
                   <div key={teacher._id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                    <div className="col-span-3 font-medium flex items-center gap-2">
-                      {teacher.name}
-                      {isCurrentUser && (
-                        <span className="px-2 py-0.5 bg-primary-500/20 text-primary-400 rounded text-xs">אתה</span>
-                      )}
+                    <div className="col-span-1 text-slate-500">{rowNum}</div>
+                    <div className="col-span-3 font-medium flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-white">
+                          {(teacher.firstName?.charAt(0) || '') + (teacher.lastName?.charAt(0) || '')}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate">{fullName}</p>
+                        {isCurrentUser && (
+                          <span className="px-2 py-0.5 bg-primary-500/20 text-primary-400 rounded text-xs">אתה</span>
+                        )}
+                      </div>
                       {teacher.role === 'admin' && (
-                        <FiShield size={14} className="text-warning" title="מנהל" />
+                        <FiShield size={14} className="text-warning flex-shrink-0" title="מנהל" />
                       )}
                     </div>
-                    <div className="col-span-3 text-slate-400 text-sm">{teacher.email}</div>
+                    <div className="col-span-3 text-slate-400 text-sm truncate">{teacher.email}</div>
                     <div className="col-span-2">
                       <span className="px-2 py-1 bg-primary-500/20 text-primary-400 rounded-lg text-sm">
                         {teacher.classCount} כיתות
@@ -309,9 +465,9 @@ export default function AdminDashboard() {
                     <div className="col-span-2 text-sm text-slate-400">
                       {formatDate(teacher.lastLogin)}
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                       {isCurrentUser ? (
-                        <span className="text-xs text-slate-500">לא ניתן למחוק את עצמך</span>
+                        <span className="text-xs text-slate-500">—</span>
                       ) : (
                         <button
                           onClick={() => setDeleteConfirm({ type: 'teacher', item: teacher })}
@@ -333,6 +489,12 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            <Pagination 
+              pagination={teachersPagination} 
+              onPageChange={setTeacherPage}
+              label="מורים"
+            />
           </motion.div>
         )}
 
@@ -344,38 +506,51 @@ export default function AdminDashboard() {
             exit={{ opacity: 0, y: -20 }}
             className="glass rounded-2xl overflow-hidden"
           >
+            <div className="px-6 py-4 border-b border-slate-700/50">
+              <h3 className="font-bold">רשימת כיתות</h3>
+            </div>
+
             <div className="divide-y divide-slate-700/50">
               <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-800/50 text-sm font-semibold text-slate-400">
+                <div className="col-span-1">#</div>
                 <div className="col-span-3">שם הכיתה</div>
                 <div className="col-span-3">מורה</div>
                 <div className="col-span-2">תלמידים</div>
-                <div className="col-span-2">שנה</div>
-                <div className="col-span-2">פעולות</div>
+                <div className="col-span-2">תאריך יצירה</div>
+                <div className="col-span-1">פעולות</div>
               </div>
               
-              {classes.map(cls => (
-                <div key={cls._id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                  <div className="col-span-3 font-medium">{cls.name}</div>
-                  <div className="col-span-3 text-slate-400 text-sm">
-                    {cls.teacher?.name || 'ללא מורה'}
+              {classes.map((cls, index) => {
+                const rowNum = ((classesPagination?.currentPage || 1) - 1) * ITEMS_PER_PAGE + index + 1;
+                const teacherName = cls.teacher 
+                  ? `${cls.teacher.firstName || ''} ${cls.teacher.lastName || ''}`.trim() 
+                  : 'ללא מורה';
+                
+                return (
+                  <div key={cls._id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
+                    <div className="col-span-1 text-slate-500">{rowNum}</div>
+                    <div className="col-span-3 font-medium">{cls.name}</div>
+                    <div className="col-span-3 text-slate-400 text-sm">{teacherName}</div>
+                    <div className="col-span-2">
+                      <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">
+                        {cls.studentCount} תלמידים
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-sm text-slate-400">
+                      {formatDate(cls.createdAt)}
+                    </div>
+                    <div className="col-span-1">
+                      <button
+                        onClick={() => setDeleteConfirm({ type: 'class', item: cls })}
+                        className="p-2 rounded-lg hover:bg-error/20 text-slate-400 hover:text-error transition-colors"
+                        title="מחק כיתה"
+                      >
+                        <FiTrash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">
-                      {cls.studentCount} תלמידים
-                    </span>
-                  </div>
-                  <div className="col-span-2 text-sm text-slate-400">{cls.year}</div>
-                  <div className="col-span-2">
-                    <button
-                      onClick={() => setDeleteConfirm({ type: 'class', item: cls })}
-                      className="p-2 rounded-lg hover:bg-error/20 text-slate-400 hover:text-error transition-colors"
-                      title="מחק כיתה"
-                    >
-                      <FiTrash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               {classes.length === 0 && (
                 <div className="px-6 py-12 text-center text-slate-400">
@@ -384,6 +559,12 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            <Pagination 
+              pagination={classesPagination} 
+              onPageChange={setClassPage}
+              label="כיתות"
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -395,14 +576,14 @@ export default function AdminDashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
             onClick={() => setDeleteConfirm(null)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 w-full max-w-md mx-4"
+              className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-center">
@@ -414,7 +595,7 @@ export default function AdminDashboard() {
                 
                 {deleteConfirm.type === 'teacher' ? (
                   <p className="text-slate-400 mb-6">
-                    האם אתה בטוח שברצונך למחוק את המורה <strong>{deleteConfirm.item.name}</strong>?
+                    האם אתה בטוח שברצונך למחוק את המורה <strong>{getTeacherFullName(deleteConfirm.item)}</strong>?
                     <br />
                     <span className="text-error text-sm">
                       פעולה זו תמחק גם את כל הכיתות, התלמידים והנתונים של המורה!
@@ -433,7 +614,7 @@ export default function AdminDashboard() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="btn-secondary flex-1"
+                    className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
                   >
                     ביטול
                   </button>
@@ -445,7 +626,7 @@ export default function AdminDashboard() {
                         handleDeleteClass(deleteConfirm.item);
                       }
                     }}
-                    className="flex-1 bg-error hover:bg-error/80 text-white py-2.5 rounded-xl font-medium transition-colors"
+                    className="flex-1 py-3 rounded-xl bg-error hover:bg-error/80 text-white font-medium transition-colors"
                   >
                     מחק
                   </button>

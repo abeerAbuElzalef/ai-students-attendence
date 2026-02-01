@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
 // Auth API
 export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (name, email, password) => api.post('/auth/register', { name, email, password }),
+  register: (firstName, lastName, email, password) => api.post('/auth/register', { firstName, lastName, email, password }),
   getMe: () => api.get('/auth/me')
 };
 
@@ -76,12 +76,14 @@ export const exportApi = {
     })
 };
 
-// Admin API
+// Admin API with pagination and sorting
 export const adminApi = {
   getDashboard: () => api.get('/admin/dashboard'),
-  getTeachers: () => api.get('/admin/teachers'),
+  getTeachers: (page = 1, limit = 20, sortBy = 'firstName') => 
+    api.get('/admin/teachers', { params: { page, limit, sortBy } }),
   deleteTeacher: (id) => api.delete(`/admin/teachers/${id}`),
-  getClasses: () => api.get('/admin/classes'),
+  getClasses: (page = 1, limit = 20) => 
+    api.get('/admin/classes', { params: { page, limit } }),
   deleteClass: (id) => api.delete(`/admin/classes/${id}`)
 };
 

@@ -19,18 +19,18 @@ module.exports = async (req, res) => {
 
     // POST /api/auth/register
     if (action === 'register' && req.method === 'POST') {
-      const { name, email, password } = req.body;
+      const { firstName, lastName, email, password } = req.body;
       
-      if (!name || !email || !password) {
-        return res.status(400).json({ error: 'Name, email, and password are required' });
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ error: 'שם פרטי, שם משפחה, אימייל וסיסמה נדרשים' });
       }
       
       const existingTeacher = await Teacher.findOne({ email });
       if (existingTeacher) {
-        return res.status(400).json({ error: 'Email already registered' });
+        return res.status(400).json({ error: 'האימייל כבר רשום במערכת' });
       }
       
-      const teacher = new Teacher({ name, email, password });
+      const teacher = new Teacher({ firstName, lastName, email, password });
       await teacher.save();
       
       const token = generateToken(teacher);
@@ -39,7 +39,8 @@ module.exports = async (req, res) => {
         message: 'Registration successful',
         token,
         _id: teacher._id,
-        name: teacher.name,
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
         email: teacher.email,
         role: teacher.role,
         isAdmin: teacher.role === 'admin'
@@ -51,17 +52,17 @@ module.exports = async (req, res) => {
       const { email, password } = req.body;
       
       if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
+        return res.status(400).json({ error: 'אימייל וסיסמה נדרשים' });
       }
       
       const teacher = await Teacher.findOne({ email });
       if (!teacher) {
-        return res.status(401).json({ error: 'Invalid email or password' });
+        return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
       }
       
       const isMatch = await teacher.comparePassword(password);
       if (!isMatch) {
-        return res.status(401).json({ error: 'Invalid email or password' });
+        return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
       }
       
       // Update lastLogin timestamp
@@ -74,7 +75,8 @@ module.exports = async (req, res) => {
         message: 'Login successful',
         token,
         _id: teacher._id,
-        name: teacher.name,
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
         email: teacher.email,
         role: teacher.role,
         isAdmin: teacher.role === 'admin'
@@ -89,7 +91,8 @@ module.exports = async (req, res) => {
       }
       return res.json({
         _id: authResult.teacher._id,
-        name: authResult.teacher.name,
+        firstName: authResult.teacher.firstName,
+        lastName: authResult.teacher.lastName,
         email: authResult.teacher.email,
         role: authResult.teacher.role,
         isAdmin: authResult.teacher.role === 'admin'

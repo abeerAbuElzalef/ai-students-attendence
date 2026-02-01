@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiUpload, FiX, FiCheck, FiDownload, FiFile, FiSearch, FiUser } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiUpload, FiX, FiCheck, FiDownload, FiFile, FiSearch, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { studentApi } from '../api';
+
+const ITEMS_PER_PAGE = 20;
 
 // Generate a consistent color based on name
 const getAvatarColor = (name) => {
@@ -47,6 +49,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
   const [importing, setImporting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [previewStudents, setPreviewStudents] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -256,6 +259,84 @@ export default function StudentList({ classId, className, classes, onStudentChan
            student.lastName.includes(searchTerm);
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Pagination component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50">
+        <div className="text-sm text-slate-400">
+          מציג {startIndex + 1}-{Math.min(endIndex, filteredStudents.length)} מתוך {filteredStudents.length} תלמידים
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-lg transition-colors ${
+              currentPage === 1
+                ? 'text-slate-600 cursor-not-allowed'
+                : 'hover:bg-slate-700/50 text-slate-300'
+            }`}
+          >
+            <FiChevronRight size={20} />
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                    pageNum === currentPage
+                      ? 'bg-primary-600 text-white'
+                      : 'hover:bg-slate-700/50 text-slate-400'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-lg transition-colors ${
+              currentPage === totalPages
+                ? 'text-slate-600 cursor-not-allowed'
+                : 'hover:bg-slate-700/50 text-slate-300'
+            }`}
+          >
+            <FiChevronLeft size={20} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
@@ -382,7 +463,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
             {/* Student Rows */}
             <div className="divide-y divide-slate-700/30">
               <AnimatePresence>
-                {filteredStudents.map((student, index) => (
+                {paginatedStudents.map((student, index) => (
                   <motion.div
                     key={student._id}
                     initial={{ opacity: 0, y: 10 }}
@@ -394,7 +475,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
                     {/* Number */}
                     <div className="col-span-1 flex items-center">
                       <span className="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-sm font-medium text-slate-500 group-hover:bg-slate-700/50 group-hover:text-slate-400 transition-colors">
-                        {index + 1}
+                        {startIndex + index + 1}
                       </span>
                     </div>
 
@@ -482,23 +563,28 @@ export default function StudentList({ classId, className, classes, onStudentChan
               </AnimatePresence>
             </div>
 
-            {/* Footer Stats */}
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-800/40 to-transparent border-t border-slate-700/50">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">
-                  מציג {filteredStudents.length} מתוך {students.length} תלמידים
-                </span>
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="text-primary-400 hover:text-primary-300 flex items-center gap-1"
-                  >
-                    <FiX size={14} />
-                    <span>נקה חיפוש</span>
-                  </button>
-                )}
+            {/* Pagination */}
+            <Pagination />
+
+            {/* Footer Stats - only show when pagination is hidden */}
+            {totalPages <= 1 && (
+              <div className="px-6 py-4 bg-gradient-to-r from-slate-800/40 to-transparent border-t border-slate-700/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-500">
+                    מציג {filteredStudents.length} מתוך {students.length} תלמידים
+                  </span>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="text-primary-400 hover:text-primary-300 flex items-center gap-1"
+                    >
+                      <FiX size={14} />
+                      <span>נקה חיפוש</span>
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

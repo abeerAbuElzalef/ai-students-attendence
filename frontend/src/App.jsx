@@ -22,6 +22,7 @@ const tabs = [
 
 function UserProfile({ user, onLogout }) {
   const [showDetails, setShowDetails] = useState(false);
+  const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'משתמש';
 
   return (
     <div className="relative">
@@ -30,10 +31,12 @@ function UserProfile({ user, onLogout }) {
         className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
       >
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-          <FiUser size={16} className="text-white" />
+          <span className="text-sm font-bold text-white">
+            {(user?.firstName?.charAt(0) || '') + (user?.lastName?.charAt(0) || '')}
+          </span>
         </div>
         <div className="text-right">
-          <p className="text-sm font-medium">{user?.name || 'משתמש'}</p>
+          <p className="text-sm font-medium">{fullName}</p>
           <p className="text-xs text-slate-400">{user?.isAdmin ? 'מנהל' : 'מורה'}</p>
         </div>
       </button>
@@ -49,9 +52,11 @@ function UserProfile({ user, onLogout }) {
           <div className="space-y-3">
             <div className="text-center pb-3 border-b border-slate-700">
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mb-2">
-                <FiUser size={28} className="text-white" />
+                <span className="text-xl font-bold text-white">
+                  {(user?.firstName?.charAt(0) || '') + (user?.lastName?.charAt(0) || '')}
+                </span>
               </div>
-              <h3 className="font-bold text-lg">{user?.name}</h3>
+              <h3 className="font-bold text-lg">{fullName}</h3>
               <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                 user?.isAdmin 
                   ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
@@ -248,7 +253,7 @@ function AppContent() {
             {!selectedClass && classes.length === 0 ? (
               <div className="glass rounded-2xl p-12 text-center">
                 <FiUsers size={48} className="mx-auto mb-4 text-slate-500" />
-                <h2 className="text-xl font-bold mb-2">ברוך הבא, {user?.name}!</h2>
+                <h2 className="text-xl font-bold mb-2">ברוך הבא, {user?.firstName}!</h2>
                 <p className="text-slate-400 mb-4">התחל על ידי יצירת כיתה ראשונה</p>
               </div>
             ) : !selectedClass ? (

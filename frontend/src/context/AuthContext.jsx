@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }) => {
       const userData = response.data;
       setUser({
         _id: userData._id,
-        name: userData.name,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         email: userData.email,
         role: userData.role,
         isAdmin: userData.isAdmin || userData.role === 'admin'
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
-    const { token: newToken, _id, name, email: userEmail, role, isAdmin } = response.data;
+    const { token: newToken, _id, firstName, lastName, email: userEmail, role, isAdmin } = response.data;
     
     localStorage.setItem('token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
@@ -54,7 +55,8 @@ export const AuthProvider = ({ children }) => {
     
     const userData = { 
       _id, 
-      name, 
+      firstName,
+      lastName,
       email: userEmail, 
       role,
       isAdmin: isAdmin || role === 'admin' 
@@ -64,9 +66,17 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
-  const register = async (name, email, password) => {
-    const response = await api.post('/auth/register', { name, email, password });
-    const { token: newToken, _id, name: userName, email: userEmail, role, isAdmin } = response.data;
+  const register = async (firstName, lastName, email, password) => {
+    const response = await api.post('/auth/register', { firstName, lastName, email, password });
+    const { 
+      token: newToken, 
+      _id, 
+      firstName: userFirstName, 
+      lastName: userLastName, 
+      email: userEmail, 
+      role, 
+      isAdmin 
+    } = response.data;
     
     localStorage.setItem('token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
@@ -74,7 +84,8 @@ export const AuthProvider = ({ children }) => {
     
     const userData = { 
       _id, 
-      name: userName, 
+      firstName: userFirstName,
+      lastName: userLastName,
       email: userEmail, 
       role,
       isAdmin: isAdmin || role === 'admin' 
@@ -91,6 +102,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Helper to get full name
+  const getFullName = () => {
+    if (!user) return '';
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  };
+
   const value = {
     user,
     token,
@@ -98,7 +115,8 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     login,
     register,
-    logout
+    logout,
+    getFullName
   };
 
   return (

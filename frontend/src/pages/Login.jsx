@@ -8,7 +8,8 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: ''
   });
@@ -24,12 +25,12 @@ export default function Login() {
         await login(formData.email, formData.password);
         toast.success('התחברת בהצלחה!');
       } else {
-        if (!formData.name.trim()) {
-          toast.error('נא להזין שם');
+        if (!formData.firstName.trim() || !formData.lastName.trim()) {
+          toast.error('נא להזין שם פרטי ושם משפחה');
           setLoading(false);
           return;
         }
-        await register(formData.name, formData.email, formData.password);
+        await register(formData.firstName, formData.lastName, formData.email, formData.password);
         toast.success('נרשמת בהצלחה!');
       }
     } catch (error) {
@@ -95,25 +96,43 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name field (only for register) */}
+            {/* Name fields (only for register) */}
             {!isLogin && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
               >
-                <label className="block text-sm font-medium text-slate-400 mb-2">
-                  שם מלא
-                </label>
-                <div className="relative">
-                  <FiUser className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="input-field pr-12"
-                    placeholder="הזן את שמך"
-                  />
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    שם פרטי
+                  </label>
+                  <div className="relative">
+                    <FiUser className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      type="text"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="input-field pr-12"
+                      placeholder="הזן שם פרטי"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    שם משפחה
+                  </label>
+                  <div className="relative">
+                    <FiUser className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="input-field pr-12"
+                      placeholder="הזן שם משפחה"
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
