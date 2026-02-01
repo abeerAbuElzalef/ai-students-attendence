@@ -20,8 +20,67 @@ module.exports = async (req, res) => {
     await connectToDatabase();
     
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const resource = url.searchParams.get('resource'); // teachers or classes
+    const resource = url.searchParams.get('resource'); // dashboard, teachers, or classes
     const id = url.searchParams.get('id');
+
+    // GET /api/admin/dashboard - Get dashboard stats
+    if (resource === 'dashboard' && req.method === 'GET') {
+      const totalTeachers = await Teacher.countDocuments();
+      const totalClasses = await Class.countDocuments();
+      const totalStudents = await Student.countDocuments();
+      const totalAttendanceRecords = await Attendance.countDocuments();
+
+      const recentTeachers = await Teacher.find()
+        .select('-password')
+        .sort({ createdAt: -1 })
+        .limit(5);
+
+      const recentClasses = await Class.find()
+        .populate('teacher', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(5);
+
+      // Classes per teacher
+      const classesPerTeacher = await Class.aggregate([
+        {
+          $group: {
+            _id: '$teacher',
+            classCount: { $sum: 1 }
+          }
+        },
+        {
+          $lookup: {
+            from: 'teachers',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'teacherInfo'
+          }
+        },
+        {
+          $unwind: '$teacherInfo'
+        },
+        {
+          $project: {
+            _id: 1,
+            classCount: 1,
+            teacherName: '$teacherInfo.name',
+            teacherEmail: '$teacherInfo.email'
+          }
+        }
+      ]);
+
+      return res.json({
+        stats: {
+          totalTeachers,
+          totalClasses,
+          totalStudents,
+          totalAttendanceRecords
+        },
+        recentTeachers,
+        recentClasses,
+        classesPerTeacher
+      });
+    }
 
     // GET /api/admin/teachers
     if (resource === 'teachers' && !id && req.method === 'GET') {

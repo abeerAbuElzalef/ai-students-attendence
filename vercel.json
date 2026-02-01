@@ -21,6 +21,7 @@
     { "source": "/api/calendar/:year/:month", "destination": "/api/calendar?year=:year&month=:month" },
     { "source": "/api/holidays/:year/:month", "destination": "/api/holidays?year=:year&month=:month" },
     { "source": "/api/export/monthly", "destination": "/api/export" },
+    { "source": "/api/admin/dashboard", "destination": "/api/admin?resource=dashboard" },
     { "source": "/api/admin/teachers/:id", "destination": "/api/admin?resource=teachers&id=:id" },
     { "source": "/api/admin/teachers", "destination": "/api/admin?resource=teachers" },
     { "source": "/api/admin/classes/:id", "destination": "/api/admin?resource=classes&id=:id" },

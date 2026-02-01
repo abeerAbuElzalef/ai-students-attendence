@@ -76,6 +76,7 @@ export const exportApi = {
 
 // Admin API
 export const adminApi = {
+  getDashboard: () => api.get('/admin/dashboard'),
   getTeachers: () => api.get('/admin/teachers'),
   deleteTeacher: (id) => api.delete(`/admin/teachers/${id}`),
   getClasses: () => api.get('/admin/classes'),
