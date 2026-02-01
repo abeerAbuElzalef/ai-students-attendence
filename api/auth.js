@@ -64,6 +64,10 @@ module.exports = async (req, res) => {
         return res.status(401).json({ error: 'Invalid email or password' });
       }
       
+      // Update lastLogin timestamp
+      teacher.lastLogin = new Date();
+      await teacher.save();
+      
       const token = generateToken(teacher);
       
       return res.json({

@@ -7,6 +7,7 @@ const teacherSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['teacher', 'admin'], default: 'teacher' },
+  lastLogin: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now }
 });
 
