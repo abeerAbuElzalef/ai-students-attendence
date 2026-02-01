@@ -1,24 +1,29 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
-  "installCommand": "npm install && cd api && npm install",
-  "framework": null,
+  "buildCommand": "cd frontend && npm install && npm run build && mkdir -p ../public && mv dist/* ../public/",
+  "outputDirectory": "public",
+  "installCommand": "cd api && npm install",
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     { "source": "/api/auth/register", "destination": "/api/auth/register" },
     { "source": "/api/auth/login", "destination": "/api/auth/login" },
     { "source": "/api/auth/me", "destination": "/api/auth/me" },
-    { "source": "/api/classes", "destination": "/api/classes/index" },
     { "source": "/api/classes/:id", "destination": "/api/classes/[id]" },
-    { "source": "/api/students", "destination": "/api/students/index" },
+    { "source": "/api/classes", "destination": "/api/classes/index" },
     { "source": "/api/students/import", "destination": "/api/students/import" },
     { "source": "/api/students/:id", "destination": "/api/students/[id]" },
+    { "source": "/api/students", "destination": "/api/students/index" },
     { "source": "/api/attendance", "destination": "/api/attendance/index" },
     { "source": "/api/calendar/:year/:month", "destination": "/api/calendar/[year]/[month]" },
     { "source": "/api/holidays/:year/:month", "destination": "/api/holidays/[year]/[month]" },
     { "source": "/api/export/monthly", "destination": "/api/export/monthly" },
-    { "source": "/api/admin/teachers", "destination": "/api/admin/teachers" },
     { "source": "/api/admin/teachers/:id", "destination": "/api/admin/teachers/[id]" },
-    { "source": "/api/admin/classes", "destination": "/api/admin/classes" },
-    { "source": "/api/admin/classes/:id", "destination": "/api/admin/classes/[id]" }
+    { "source": "/api/admin/teachers", "destination": "/api/admin/teachers" },
+    { "source": "/api/admin/classes/:id", "destination": "/api/admin/classes/[id]" },
+    { "source": "/api/admin/classes", "destination": "/api/admin/classes" }
   ]
 }
