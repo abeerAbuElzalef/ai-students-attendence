@@ -1,26 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiUpload, FiX, FiCheck } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiUpload, FiX, FiCheck, FiDownload, FiFile } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { studentApi } from '../api';
 
-export default function StudentList() {
+export default function StudentList({ classId, className, classes }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [newStudent, setNewStudent] = useState({ name: '', className: '' });
+  const [newStudent, setNewStudent] = useState({ name: '', notes: '' });
   const [bulkText, setBulkText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    loadStudents();
-  }, []);
+    if (classId) {
+      loadStudents();
+    }
+  }, [classId]);
 
   const loadStudents = async () => {
     try {
-      const response = await studentApi.getAll();
+      const response = await studentApi.getAll(classId);
       setStudents(response.data);
     } catch (error) {
       toast.error('שגיאה בטעינת התלמידים');
@@ -35,13 +41,13 @@ export default function StudentList() {
     }
 
     try {
-      await studentApi.create(newStudent.name, newStudent.className);
+      await studentApi.create(newStudent.name, classId, newStudent.notes);
       toast.success('התלמיד נוסף בהצלחה');
       setShowAddModal(false);
-      setNewStudent({ name: '', className: '' });
+      setNewStudent({ name: '', notes: '' });
       loadStudents();
     } catch (error) {
-      toast.error('שגיאה בהוספת התלמיד');
+      toast.error(error.response?.data?.error || 'שגיאה בהוספת התלמיד');
     }
   };
 
@@ -52,23 +58,42 @@ export default function StudentList() {
       return;
     }
 
-    const studentsToAdd = lines.map(line => {
-      const parts = line.split(',').map(p => p.trim());
-      return {
-        name: parts[0],
-        className: parts[1] || ''
-      };
-    });
+    const studentsToAdd = lines.map(line => ({
+      name: line.trim()
+    }));
 
     try {
-      await studentApi.bulkCreate(studentsToAdd);
-      toast.success(`${studentsToAdd.length} תלמידים נוספו בהצלחה`);
+      const response = await studentApi.bulkCreate(studentsToAdd, classId);
+      toast.success(response.data.message);
       setShowBulkModal(false);
       setBulkText('');
       loadStudents();
     } catch (error) {
-      toast.error('שגיאה בהוספת התלמידים');
+      toast.error(error.response?.data?.error || 'שגיאה בהוספת התלמידים');
     }
+  };
+
+  const handleImportExcel = async () => {
+    if (!importFile) {
+      toast.error('נא לבחור קובץ');
+      return;
+    }
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', importFile);
+    formData.append('classId', classId);
+
+    try {
+      const response = await studentApi.import(formData);
+      toast.success(response.data.message);
+      setShowImportModal(false);
+      setImportFile(null);
+      loadStudents();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'שגיאה בייבוא הקובץ');
+    }
+    setImporting(false);
   };
 
   const handleUpdateStudent = async () => {
@@ -78,12 +103,15 @@ export default function StudentList() {
     }
 
     try {
-      await studentApi.update(editingStudent.id, editingStudent.name, editingStudent.class_name);
+      await studentApi.update(editingStudent._id, {
+        name: editingStudent.name,
+        notes: editingStudent.notes
+      });
       toast.success('התלמיד עודכן בהצלחה');
       setEditingStudent(null);
       loadStudents();
     } catch (error) {
-      toast.error('שגיאה בעדכון התלמיד');
+      toast.error(error.response?.data?.error || 'שגיאה בעדכון התלמיד');
     }
   };
 
@@ -97,13 +125,16 @@ export default function StudentList() {
       toast.success('התלמיד נמחק בהצלחה');
       loadStudents();
     } catch (error) {
-      toast.error('שגיאה במחיקת התלמיד');
+      toast.error(error.response?.data?.error || 'שגיאה במחיקת התלמיד');
     }
   };
 
+  const handleDownloadTemplate = () => {
+    window.open(studentApi.downloadTemplate(), '_blank');
+  };
+
   const filteredStudents = students.filter(student =>
-    student.name.includes(searchTerm) || 
-    (student.class_name && student.class_name.includes(searchTerm))
+    student.name.includes(searchTerm)
   );
 
   return (
@@ -117,11 +148,20 @@ export default function StudentList() {
             </div>
             <div>
               <h2 className="text-xl font-bold">רשימת תלמידים</h2>
-              <p className="text-slate-400 text-sm">{students.length} תלמידים רשומים</p>
+              <p className="text-slate-400 text-sm">
+                {className} • {students.length} תלמידים
+              </p>
             </div>
           </div>
 
           <div className="flex gap-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <FiFile size={18} />
+              <span>ייבוא מאקסל</span>
+            </button>
             <button
               onClick={() => setShowBulkModal(true)}
               className="btn-secondary flex items-center gap-2"
@@ -166,8 +206,8 @@ export default function StudentList() {
             {/* Table header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-800/50">
               <div className="col-span-1 text-sm font-semibold text-slate-400">#</div>
-              <div className="col-span-5 text-sm font-semibold text-slate-400">שם התלמיד</div>
-              <div className="col-span-4 text-sm font-semibold text-slate-400">כיתה</div>
+              <div className="col-span-7 text-sm font-semibold text-slate-400">שם התלמיד</div>
+              <div className="col-span-2 text-sm font-semibold text-slate-400">הערות</div>
               <div className="col-span-2 text-sm font-semibold text-slate-400">פעולות</div>
             </div>
 
@@ -175,7 +215,7 @@ export default function StudentList() {
             <AnimatePresence>
               {filteredStudents.map((student, index) => (
                 <motion.div
-                  key={student.id}
+                  key={student._id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -184,9 +224,9 @@ export default function StudentList() {
                 >
                   <div className="col-span-1 text-slate-500">{index + 1}</div>
                   
-                  {editingStudent?.id === student.id ? (
+                  {editingStudent?._id === student._id ? (
                     <>
-                      <div className="col-span-5">
+                      <div className="col-span-7">
                         <input
                           type="text"
                           value={editingStudent.name}
@@ -195,12 +235,13 @@ export default function StudentList() {
                           autoFocus
                         />
                       </div>
-                      <div className="col-span-4">
+                      <div className="col-span-2">
                         <input
                           type="text"
-                          value={editingStudent.class_name || ''}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, class_name: e.target.value })}
+                          value={editingStudent.notes || ''}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, notes: e.target.value })}
                           className="input-field py-1 px-3"
+                          placeholder="הערות"
                         />
                       </div>
                       <div className="col-span-2 flex gap-2">
@@ -220,8 +261,8 @@ export default function StudentList() {
                     </>
                   ) : (
                     <>
-                      <div className="col-span-5 font-medium">{student.name}</div>
-                      <div className="col-span-4 text-slate-400">{student.class_name || '-'}</div>
+                      <div className="col-span-7 font-medium">{student.name}</div>
+                      <div className="col-span-2 text-slate-400 text-sm truncate">{student.notes || '-'}</div>
                       <div className="col-span-2 flex gap-2">
                         <button
                           onClick={() => setEditingStudent(student)}
@@ -230,7 +271,7 @@ export default function StudentList() {
                           <FiEdit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDeleteStudent(student.id, student.name)}
+                          onClick={() => handleDeleteStudent(student._id, student.name)}
                           className="p-2 rounded-lg hover:bg-error/20 text-slate-400 hover:text-error transition-colors"
                         >
                           <FiTrash2 size={16} />
@@ -278,13 +319,13 @@ export default function StudentList() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">כיתה (אופציונלי)</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">הערות (אופציונלי)</label>
                   <input
                     type="text"
-                    value={newStudent.className}
-                    onChange={(e) => setNewStudent({ ...newStudent, className: e.target.value })}
+                    value={newStudent.notes}
+                    onChange={(e) => setNewStudent({ ...newStudent, notes: e.target.value })}
                     className="input-field"
-                    placeholder="לדוגמה: א׳1"
+                    placeholder="הערות נוספות"
                   />
                 </div>
               </div>
@@ -328,18 +369,16 @@ export default function StudentList() {
               <h3 className="text-xl font-bold mb-4">הוספת תלמידים מרובים</h3>
               
               <p className="text-slate-400 text-sm mb-4">
-                הזן שם תלמיד בכל שורה. ניתן להוסיף כיתה אחרי פסיק.
-                <br />
-                <span className="text-slate-500">לדוגמה: יוסי כהן, א׳1</span>
+                הזן שם תלמיד בכל שורה
               </p>
 
               <textarea
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 className="input-field h-64 resize-none"
-                placeholder={`דוד לוי, א׳1
-שרה כהן, א׳1
-משה ישראלי, א׳2
+                placeholder={`דוד לוי
+שרה כהן
+משה ישראלי
 רחל אברהם`}
                 dir="rtl"
               />
@@ -356,6 +395,98 @@ export default function StudentList() {
                   className="btn-primary flex-1"
                 >
                   הוסף {bulkText.split('\n').filter(l => l.trim()).length} תלמידים
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Import Excel Modal */}
+      <AnimatePresence>
+        {showImportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop"
+            onClick={() => setShowImportModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass rounded-2xl p-6 w-full max-w-lg mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold mb-4">ייבוא תלמידים מאקסל</h3>
+              
+              <p className="text-slate-400 text-sm mb-4">
+                העלה קובץ Excel עם עמודה בשם "שם" או "שם התלמיד"
+              </p>
+
+              <div className="mb-4">
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="text-primary-400 text-sm flex items-center gap-2 hover:underline"
+                >
+                  <FiDownload size={16} />
+                  <span>הורד קובץ לדוגמה</span>
+                </button>
+              </div>
+
+              <div
+                className={`
+                  border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors
+                  ${importFile ? 'border-success bg-success/10' : 'border-slate-600 hover:border-slate-500'}
+                `}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => setImportFile(e.target.files[0])}
+                  className="hidden"
+                />
+                
+                {importFile ? (
+                  <div>
+                    <FiCheck size={32} className="mx-auto mb-2 text-success" />
+                    <p className="font-medium">{importFile.name}</p>
+                    <p className="text-sm text-slate-400 mt-1">לחץ לבחירת קובץ אחר</p>
+                  </div>
+                ) : (
+                  <div>
+                    <FiUpload size={32} className="mx-auto mb-2 text-slate-400" />
+                    <p className="text-slate-400">לחץ לבחירת קובץ Excel</p>
+                    <p className="text-sm text-slate-500 mt-1">.xlsx או .xls</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => { setShowImportModal(false); setImportFile(null); }}
+                  className="btn-secondary flex-1"
+                >
+                  ביטול
+                </button>
+                <button
+                  onClick={handleImportExcel}
+                  disabled={!importFile || importing}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all
+                    ${importFile && !importing ? 'btn-primary' : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}
+                  `}
+                >
+                  {importing ? (
+                    <div className="spinner w-5 h-5"></div>
+                  ) : (
+                    <>
+                      <FiUpload size={18} />
+                      <span>ייבא</span>
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

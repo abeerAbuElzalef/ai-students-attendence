@@ -9,7 +9,7 @@ const HEBREW_MONTHS = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ];
 
-export default function ExportPanel() {
+export default function ExportPanel({ classId, className }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -22,12 +22,14 @@ export default function ExportPanel() {
   const [studentYear, setStudentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    loadStudents();
-  }, []);
+    if (classId) {
+      loadStudents();
+    }
+  }, [classId]);
 
   const loadStudents = async () => {
     try {
-      const response = await studentApi.getAll();
+      const response = await studentApi.getAll(classId);
       setStudents(response.data);
     } catch (error) {
       toast.error('שגיאה בטעינת התלמידים');
@@ -36,7 +38,7 @@ export default function ExportPanel() {
   };
 
   const handleMonthlyExport = () => {
-    const url = exportApi.getMonthlyReportUrl(selectedYear, selectedMonth);
+    const url = exportApi.getMonthlyReportUrl(selectedYear, selectedMonth, classId);
     window.open(url, '_blank');
     toast.success('הקובץ מוכן להורדה');
   };
@@ -68,7 +70,7 @@ export default function ExportPanel() {
           </div>
           <div>
             <h3 className="text-xl font-bold">דוח נוכחות חודשי</h3>
-            <p className="text-slate-400 text-sm">ייצוא נוכחות כל התלמידים לחודש מסוים</p>
+            <p className="text-slate-400 text-sm">ייצוא נוכחות {className} לחודש מסוים</p>
           </div>
         </div>
 
@@ -118,7 +120,7 @@ export default function ExportPanel() {
           <div className="text-sm text-slate-300">
             <p>הקובץ יכלול:</p>
             <ul className="list-disc list-inside mt-2 space-y-1 text-slate-400">
-              <li>שם כל תלמיד וכיתה</li>
+              <li>שם כל תלמיד</li>
               <li>סטטוס נוכחות לכל יום בחודש</li>
               <li>סימון חגים ושבתות</li>
               <li>סיכום נוכחות, חיסורים ואיחורים</li>
@@ -155,8 +157,8 @@ export default function ExportPanel() {
             >
               <option value="">-- בחר תלמיד --</option>
               {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name} {student.class_name ? `(${student.class_name})` : ''}
+                <option key={student._id} value={student._id}>
+                  {student.name}
                 </option>
               ))}
             </select>

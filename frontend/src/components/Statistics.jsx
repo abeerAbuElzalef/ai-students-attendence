@@ -8,7 +8,7 @@ const HEBREW_MONTHS = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ];
 
-export default function Statistics() {
+export default function Statistics({ classId, className }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [students, setStudents] = useState([]);
@@ -17,8 +17,10 @@ export default function Statistics() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    loadData();
-  }, [selectedMonth, selectedYear]);
+    if (classId) {
+      loadData();
+    }
+  }, [selectedMonth, selectedYear, classId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -28,9 +30,9 @@ export default function Statistics() {
       const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${lastDay}`;
 
       const [statsRes, studentsRes, calendarRes] = await Promise.all([
-        attendanceApi.getStats(startDate, endDate),
-        studentApi.getAll(),
-        calendarApi.getMonth(selectedYear, selectedMonth)
+        attendanceApi.getStats(startDate, endDate, classId),
+        studentApi.getAll(classId),
+        calendarApi.getMonth(selectedYear, selectedMonth, classId)
       ]);
 
       setStats(statsRes.data);
@@ -109,7 +111,7 @@ export default function Statistics() {
             </div>
             <div>
               <h2 className="text-xl font-bold">סטטיסטיקות נוכחות</h2>
-              <p className="text-slate-400 text-sm">ניתוח נתוני נוכחות לפי חודש</p>
+              <p className="text-slate-400 text-sm">{className}</p>
             </div>
           </div>
 
@@ -156,7 +158,7 @@ export default function Statistics() {
                 <span className="text-slate-400 text-sm">תלמידים</span>
               </div>
               <p className="text-3xl font-bold">{students.length}</p>
-              <p className="text-xs text-slate-500 mt-1">רשומים במערכת</p>
+              <p className="text-xs text-slate-500 mt-1">בכיתה</p>
             </motion.div>
 
             <motion.div
@@ -246,9 +248,6 @@ export default function Statistics() {
                           </div>
                           <div>
                             <p className="font-medium">{student.student_name}</p>
-                            {student.class_name && (
-                              <p className="text-xs text-slate-400">{student.class_name}</p>
-                            )}
                           </div>
                         </div>
                         <div className="text-left">
@@ -293,9 +292,6 @@ export default function Statistics() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{student.student_name}</p>
-                          {student.class_name && (
-                            <p className="text-xs text-slate-400">{student.class_name}</p>
-                          )}
                         </div>
                         <div className="text-left">
                           <p className="font-bold text-error">{student.rate}%</p>

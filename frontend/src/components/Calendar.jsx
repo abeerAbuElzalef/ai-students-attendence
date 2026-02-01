@@ -10,7 +10,7 @@ const HEBREW_MONTHS = [
 
 const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 
-export default function Calendar({ onDateSelect, selectedDate }) {
+export default function Calendar({ classId, className, onDateSelect, selectedDate }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,13 +19,15 @@ export default function Calendar({ onDateSelect, selectedDate }) {
   const month = currentDate.getMonth() + 1;
 
   useEffect(() => {
-    loadCalendarData();
-  }, [year, month]);
+    if (classId) {
+      loadCalendarData();
+    }
+  }, [year, month, classId]);
 
   const loadCalendarData = async () => {
     setLoading(true);
     try {
-      const response = await calendarApi.getMonth(year, month);
+      const response = await calendarApi.getMonth(year, month, classId);
       setCalendarData(response.data);
     } catch (error) {
       console.error('Error loading calendar:', error);
@@ -50,7 +52,6 @@ export default function Calendar({ onDateSelect, selectedDate }) {
 
   // Calculate first day of month offset (for grid positioning)
   const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-  const daysInMonth = new Date(year, month, 0).getDate();
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -101,7 +102,7 @@ export default function Calendar({ onDateSelect, selectedDate }) {
         {/* Holiday indicator */}
         {isHoliday && (
           <span className="text-[10px] text-holiday font-medium truncate max-w-full px-1">
-            {dayData.holiday?.hebrew_name || dayData.reason}
+            {dayData.holiday?.hebrewName || dayData.reason}
           </span>
         )}
 
@@ -153,9 +154,14 @@ export default function Calendar({ onDateSelect, selectedDate }) {
             <FiChevronRight size={24} />
           </button>
           
-          <h2 className="text-2xl font-bold">
-            {HEBREW_MONTHS[month - 1]} {year}
-          </h2>
+          <div>
+            <h2 className="text-2xl font-bold">
+              {HEBREW_MONTHS[month - 1]} {year}
+            </h2>
+            {className && (
+              <p className="text-sm text-slate-400">{className}</p>
+            )}
+          </div>
           
           <button
             onClick={goToNextMonth}
@@ -229,7 +235,7 @@ export default function Calendar({ onDateSelect, selectedDate }) {
       {calendarData && (
         <div className="mt-6 pt-4 border-t border-slate-700/50">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">סה״כ תלמידים:</span>
+            <span className="text-slate-400">סה״כ תלמידים בכיתה:</span>
             <span className="font-semibold">{calendarData.totalStudents}</span>
           </div>
         </div>

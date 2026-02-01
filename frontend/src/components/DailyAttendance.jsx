@@ -37,7 +37,7 @@ const STATUS_CONFIG = {
 
 const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
-export default function DailyAttendance({ date, onClose }) {
+export default function DailyAttendance({ classId, date, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [attendance, setAttendance] = useState({});
@@ -45,22 +45,22 @@ export default function DailyAttendance({ date, onClose }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (date) {
+    if (date && classId) {
       loadAttendance();
     }
-  }, [date]);
+  }, [date, classId]);
 
   const loadAttendance = async () => {
     setLoading(true);
     try {
-      const response = await attendanceApi.getByDate(date);
+      const response = await attendanceApi.getByDate(date, classId);
       setData(response.data);
       
       // Initialize attendance state from loaded data
       const initialAttendance = {};
       response.data.students.forEach(student => {
         if (student.attendance) {
-          initialAttendance[student.id] = student.attendance.status;
+          initialAttendance[student._id] = student.attendance.status;
         }
       });
       setAttendance(initialAttendance);
@@ -82,7 +82,7 @@ export default function DailyAttendance({ date, onClose }) {
   const handleMarkAll = (status) => {
     const newAttendance = {};
     data.students.forEach(student => {
-      newAttendance[student.id] = status;
+      newAttendance[student._id] = status;
     });
     setAttendance(newAttendance);
     setHasChanges(true);
@@ -94,7 +94,8 @@ export default function DailyAttendance({ date, onClose }) {
       const records = Object.entries(attendance)
         .filter(([_, status]) => status !== null)
         .map(([studentId, status]) => ({
-          studentId: parseInt(studentId),
+          studentId,
+          classId,
           date,
           status
         }));
@@ -165,7 +166,7 @@ export default function DailyAttendance({ date, onClose }) {
         </div>
       ) : data && data.students.length === 0 ? (
         <div className="text-center py-8 text-slate-400">
-          <p>אין תלמידים רשומים</p>
+          <p>אין תלמידים בכיתה זו</p>
           <p className="text-sm mt-2">הוסף תלמידים בלשונית "תלמידים"</p>
         </div>
       ) : data && (
@@ -193,7 +194,7 @@ export default function DailyAttendance({ date, onClose }) {
             <AnimatePresence>
               {data.students.map((student, index) => (
                 <motion.div
-                  key={student.id}
+                  key={student._id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.02 }}
@@ -202,21 +203,18 @@ export default function DailyAttendance({ date, onClose }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{student.name}</p>
-                      {student.class_name && (
-                        <p className="text-xs text-slate-400">{student.class_name}</p>
-                      )}
                     </div>
                     
                     {/* Status buttons */}
                     <div className="flex gap-1">
                       {Object.entries(STATUS_CONFIG).map(([status, config]) => {
                         const Icon = config.icon;
-                        const isSelected = attendance[student.id] === status;
+                        const isSelected = attendance[student._id] === status;
                         
                         return (
                           <button
                             key={status}
-                            onClick={() => handleStatusChange(student.id, status)}
+                            onClick={() => handleStatusChange(student._id, status)}
                             className={`
                               p-2 rounded-lg transition-all duration-200
                               ${isSelected 
@@ -234,14 +232,14 @@ export default function DailyAttendance({ date, onClose }) {
                   </div>
                   
                   {/* Status label */}
-                  {attendance[student.id] && (
+                  {attendance[student._id] && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       className="mt-2 pt-2 border-t border-slate-600/30"
                     >
-                      <span className={`text-sm ${STATUS_CONFIG[attendance[student.id]].textColor}`}>
-                        {STATUS_CONFIG[attendance[student.id]].label}
+                      <span className={`text-sm ${STATUS_CONFIG[attendance[student._id]].textColor}`}>
+                        {STATUS_CONFIG[attendance[student._id]].label}
                       </span>
                     </motion.div>
                   )}
