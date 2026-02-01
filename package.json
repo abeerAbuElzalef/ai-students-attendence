@@ -6,9 +6,7 @@
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "build": "cd frontend && npm install && npm run build",
-    "vercel-build": "cd frontend && npm install && npm run build"
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
   "keywords": ["attendance", "students", "hebrew", "calendar", "holidays"],
   "author": "",

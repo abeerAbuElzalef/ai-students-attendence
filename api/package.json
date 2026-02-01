@@ -1,0 +1,12 @@
+{
+  "name": "attendance-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "mongoose": "^8.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "@hebcal/core": "^5.0.0",
+    "xlsx": "^0.18.5"
+  }
+}

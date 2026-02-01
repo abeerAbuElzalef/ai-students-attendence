@@ -9,25 +9,27 @@ const api = axios.create({
   }
 });
 
-// Add token to requests if available
-const token = localStorage.getItem('token');
-if (token) {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
+// Add auth interceptor
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Auth API
 export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (name, email, password) => api.post('/auth/register', { name, email, password }),
-  getMe: () => api.get('/auth/me'),
-  updateProfile: (data) => api.put('/auth/profile', data)
+  getMe: () => api.get('/auth/me')
 };
 
 // Class API
 export const classApi = {
   getAll: () => api.get('/classes'),
   getById: (id) => api.get(`/classes/${id}`),
-  create: (name, year, description) => api.post('/classes', { name, year, description }),
+  create: (name) => api.post('/classes', { name }),
   update: (id, data) => api.put(`/classes/${id}`, data),
   delete: (id) => api.delete(`/classes/${id}`)
 };
@@ -36,37 +38,22 @@ export const classApi = {
 export const studentApi = {
   getAll: (classId = null) => api.get('/students', { params: { classId } }),
   getById: (id) => api.get(`/students/${id}`),
-  create: (name, classId, notes) => api.post('/students', { name, classId, notes }),
-  bulkCreate: (students, classId) => api.post('/students/bulk', { students, classId }),
-  import: (formData) => api.post('/students/import', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  downloadTemplate: () => `${API_BASE}/students/download/template`,
+  create: (name, classId) => api.post('/students', { name, classId }),
+  import: (classId, students) => api.post('/students/import', { classId, students }),
   update: (id, data) => api.put(`/students/${id}`, data),
-  delete: (id) => api.delete(`/students/${id}`),
-  move: (id, classId) => api.post(`/students/${id}/move`, { classId })
+  delete: (id) => api.delete(`/students/${id}`)
 };
 
 // Attendance API
 export const attendanceApi = {
-  getByDate: (date, classId = null) => api.get(`/attendance/date/${date}`, { params: { classId } }),
-  getByRange: (startDate, endDate, classId = null) => 
-    api.get('/attendance/range', { params: { startDate, endDate, classId } }),
-  getMonthly: (year, month, classId = null) => 
-    api.get(`/attendance/monthly/${year}/${month}`, { params: { classId } }),
-  mark: (studentId, date, status, notes) => 
-    api.post('/attendance', { studentId, date, status, notes }),
-  bulkMark: (records) => api.post('/attendance/bulk', { records }),
-  getStats: (startDate, endDate, classId = null) => 
-    api.get('/attendance/stats', { params: { startDate, endDate, classId } })
+  getByDate: (date, classId = null) => api.get('/attendance', { params: { date, classId } }),
+  mark: (studentId, date, present, classId) => 
+    api.post('/attendance', { studentId, date, present, classId })
 };
 
 // Holiday API
 export const holidayApi = {
-  getByYear: (year) => api.get(`/holidays/${year}`),
-  checkDate: (date) => api.get(`/holidays/check/${date}`),
-  getNonSchoolDays: (startDate, endDate) => 
-    api.get('/holidays/non-school-days', { params: { startDate, endDate } })
+  getByMonth: (year, month) => api.get(`/holidays/${year}/${month}`)
 };
 
 // Calendar API
@@ -78,20 +65,21 @@ export const calendarApi = {
 // Export API
 export const exportApi = {
   getMonthlyReportUrl: (year, month, classId = null) => {
-    const params = classId ? `?classId=${classId}` : '';
-    return `${API_BASE}/export/monthly/${year}/${month}${params}`;
-  },
-  getStudentReportUrl: (studentId, year) => `${API_BASE}/export/student/${studentId}/${year}`
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    if (classId) params.append('classId', classId);
+    params.append('year', year);
+    params.append('month', month);
+    return `${API_BASE}/export/monthly?${params.toString()}`;
+  }
 };
 
 // Admin API
 export const adminApi = {
-  getDashboard: () => api.get('/admin/dashboard'),
   getTeachers: () => api.get('/admin/teachers'),
   deleteTeacher: (id) => api.delete(`/admin/teachers/${id}`),
   getClasses: () => api.get('/admin/classes'),
-  deleteClass: (id) => api.delete(`/admin/classes/${id}`),
-  getActivity: () => api.get('/admin/activity')
+  deleteClass: (id) => api.delete(`/admin/classes/${id}`)
 };
 
 export default api;
