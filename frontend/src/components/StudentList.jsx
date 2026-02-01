@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiUpload, FiX, FiCheck, FiDownload, FiFile } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -334,222 +335,231 @@ export default function StudentList({ classId, className, classes }) {
         )}
       </div>
 
-      {/* Add Student Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowAddModal(false)}
-          >
+      {/* Add Student Modal - Using Portal */}
+      {createPortal(
+        <AnimatePresence>
+          {showAddModal && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 w-full max-w-md mx-4 relative z-[101]"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowAddModal(false)}
             >
-              <h3 className="text-xl font-bold mb-4">הוספת תלמיד חדש</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">שם התלמיד</label>
-                  <input
-                    type="text"
-                    value={newStudent.name}
-                    onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                    className="input-field"
-                    placeholder="הזן שם מלא"
-                    autoFocus
-                  />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="glass rounded-2xl p-6 w-full max-w-md mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold mb-4">הוספת תלמיד חדש</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">שם התלמיד</label>
+                    <input
+                      type="text"
+                      value={newStudent.name}
+                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                      className="input-field"
+                      placeholder="הזן שם מלא"
+                      autoFocus
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="btn-secondary flex-1"
-                  disabled={submitting}
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleAddStudent}
-                  className="btn-primary flex-1"
-                  disabled={submitting}
-                >
-                  {submitting ? <div className="spinner w-5 h-5 mx-auto"></div> : 'הוסף'}
-                </button>
-              </div>
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="btn-secondary flex-1"
+                    disabled={submitting}
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    onClick={handleAddStudent}
+                    className="btn-primary flex-1"
+                    disabled={submitting}
+                  >
+                    {submitting ? <div className="spinner w-5 h-5 mx-auto"></div> : 'הוסף'}
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* Bulk Add Modal */}
-      <AnimatePresence>
-        {showBulkModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowBulkModal(false)}
-          >
+      {/* Bulk Add Modal - Using Portal */}
+      {createPortal(
+        <AnimatePresence>
+          {showBulkModal && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 w-full max-w-lg mx-4 relative z-[101]"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowBulkModal(false)}
             >
-              <h3 className="text-xl font-bold mb-4">הוספת תלמידים מרובים</h3>
-              
-              <p className="text-slate-400 text-sm mb-4">
-                הזן שם תלמיד בכל שורה
-              </p>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="glass rounded-2xl p-6 w-full max-w-lg mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold mb-4">הוספת תלמידים מרובים</h3>
+                
+                <p className="text-slate-400 text-sm mb-4">
+                  הזן שם תלמיד בכל שורה
+                </p>
 
-              <textarea
-                value={bulkText}
-                onChange={(e) => setBulkText(e.target.value)}
-                className="input-field h-64 resize-none"
-                placeholder={`דוד לוי
+                <textarea
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  className="input-field h-64 resize-none"
+                  placeholder={`דוד לוי
 שרה כהן
 משה ישראלי
 רחל אברהם`}
-                dir="rtl"
-              />
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowBulkModal(false)}
-                  className="btn-secondary flex-1"
-                  disabled={submitting}
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleBulkAdd}
-                  className="btn-primary flex-1"
-                  disabled={submitting}
-                >
-                  {submitting ? <div className="spinner w-5 h-5 mx-auto"></div> : `הוסף ${bulkText.split('\n').filter(l => l.trim()).length} תלמידים`}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Import Excel Modal */}
-      <AnimatePresence>
-        {showImportModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => { setShowImportModal(false); setImportFile(null); setPreviewStudents([]); }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto relative z-[101]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-xl font-bold mb-4">ייבוא תלמידים מאקסל</h3>
-              
-              <p className="text-slate-400 text-sm mb-4">
-                העלה קובץ Excel עם עמודה בשם "שם"
-              </p>
-
-              <div className="mb-4">
-                <button
-                  onClick={handleDownloadTemplate}
-                  className="text-primary-400 text-sm flex items-center gap-2 hover:underline"
-                >
-                  <FiDownload size={16} />
-                  <span>הורד קובץ לדוגמה</span>
-                </button>
-              </div>
-
-              <div
-                className={`
-                  border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors
-                  ${importFile ? 'border-success bg-success/10' : 'border-slate-600 hover:border-slate-500'}
-                `}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileSelect}
-                  className="hidden"
+                  dir="rtl"
                 />
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowBulkModal(false)}
+                    className="btn-secondary flex-1"
+                    disabled={submitting}
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    onClick={handleBulkAdd}
+                    className="btn-primary flex-1"
+                    disabled={submitting}
+                  >
+                    {submitting ? <div className="spinner w-5 h-5 mx-auto"></div> : `הוסף ${bulkText.split('\n').filter(l => l.trim()).length} תלמידים`}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Import Excel Modal - Using Portal */}
+      {createPortal(
+        <AnimatePresence>
+          {showImportModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => { setShowImportModal(false); setImportFile(null); setPreviewStudents([]); }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="glass rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold mb-4">ייבוא תלמידים מאקסל</h3>
                 
-                {importFile ? (
-                  <div>
-                    <FiCheck size={32} className="mx-auto mb-2 text-success" />
-                    <p className="font-medium">{importFile.name}</p>
-                    <p className="text-sm text-slate-400 mt-1">לחץ לבחירת קובץ אחר</p>
-                  </div>
-                ) : (
-                  <div>
-                    <FiUpload size={32} className="mx-auto mb-2 text-slate-400" />
-                    <p className="text-slate-400">לחץ לבחירת קובץ Excel</p>
-                    <p className="text-sm text-slate-500 mt-1">.xlsx או .xls</p>
+                <p className="text-slate-400 text-sm mb-4">
+                  העלה קובץ Excel עם עמודה בשם "שם"
+                </p>
+
+                <div className="mb-4">
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="text-primary-400 text-sm flex items-center gap-2 hover:underline"
+                  >
+                    <FiDownload size={16} />
+                    <span>הורד קובץ לדוגמה</span>
+                  </button>
+                </div>
+
+                <div
+                  className={`
+                    border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors
+                    ${importFile ? 'border-success bg-success/10' : 'border-slate-600 hover:border-slate-500'}
+                  `}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  {importFile ? (
+                    <div>
+                      <FiCheck size={32} className="mx-auto mb-2 text-success" />
+                      <p className="font-medium">{importFile.name}</p>
+                      <p className="text-sm text-slate-400 mt-1">לחץ לבחירת קובץ אחר</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <FiUpload size={32} className="mx-auto mb-2 text-slate-400" />
+                      <p className="text-slate-400">לחץ לבחירת קובץ Excel</p>
+                      <p className="text-sm text-slate-500 mt-1">.xlsx או .xls</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Preview */}
+                {previewStudents.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-slate-400 mb-2">
+                      תצוגה מקדימה ({previewStudents.length} תלמידים):
+                    </p>
+                    <div className="bg-slate-800/50 rounded-xl p-3 max-h-48 overflow-y-auto">
+                      {previewStudents.map((student, idx) => (
+                        <div key={idx} className="py-1 text-sm border-b border-slate-700/50 last:border-0">
+                          {idx + 1}. {student.name}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
 
-              {/* Preview */}
-              {previewStudents.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-slate-400 mb-2">
-                    תצוגה מקדימה ({previewStudents.length} תלמידים):
-                  </p>
-                  <div className="bg-slate-800/50 rounded-xl p-3 max-h-48 overflow-y-auto">
-                    {previewStudents.map((student, idx) => (
-                      <div key={idx} className="py-1 text-sm border-b border-slate-700/50 last:border-0">
-                        {idx + 1}. {student.name}
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => { setShowImportModal(false); setImportFile(null); setPreviewStudents([]); }}
+                    className="btn-secondary flex-1"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    onClick={handleImportExcel}
+                    disabled={previewStudents.length === 0 || importing}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all
+                      ${previewStudents.length > 0 && !importing ? 'btn-primary' : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}
+                    `}
+                  >
+                    {importing ? (
+                      <div className="spinner w-5 h-5"></div>
+                    ) : (
+                      <>
+                        <FiUpload size={18} />
+                        <span>ייבא {previewStudents.length} תלמידים</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-              )}
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => { setShowImportModal(false); setImportFile(null); setPreviewStudents([]); }}
-                  className="btn-secondary flex-1"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleImportExcel}
-                  disabled={previewStudents.length === 0 || importing}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all
-                    ${previewStudents.length > 0 && !importing ? 'btn-primary' : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}
-                  `}
-                >
-                  {importing ? (
-                    <div className="spinner w-5 h-5"></div>
-                  ) : (
-                    <>
-                      <FiUpload size={18} />
-                      <span>ייבא {previewStudents.length} תלמידים</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

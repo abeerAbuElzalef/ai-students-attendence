@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiFolder, FiX, FiCheck, FiUsers } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -189,88 +190,91 @@ export default function ClassManager({ selectedClass, onSelectClass, onClassesCh
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
-          >
+      {/* Add/Edit Modal - Using Portal to render at document body */}
+      {createPortal(
+        <AnimatePresence>
+          {showModal && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 w-full max-w-md mx-4 relative z-[101]"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowModal(false)}
             >
-              <h3 className="text-xl font-bold mb-4">
-                {editingClass ? 'עריכת כיתה' : 'הוספת כיתה חדשה'}
-              </h3>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="glass rounded-2xl p-6 w-full max-w-md mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold mb-4">
+                  {editingClass ? 'עריכת כיתה' : 'הוספת כיתה חדשה'}
+                </h3>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">
-                    שם הכיתה *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="input-field"
-                    placeholder="לדוגמה: כיתה ג1"
-                    required
-                    autoFocus
-                  />
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                      שם הכיתה *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="input-field"
+                      placeholder="לדוגמה: כיתה ג1"
+                      required
+                      autoFocus
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">
-                    שנת לימודים
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.year}
-                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                    className="input-field"
-                    placeholder="לדוגמה: 2025-2026"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                      שנת לימודים
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.year}
+                      onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                      className="input-field"
+                      placeholder="לדוגמה: 2025-2026"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">
-                    תיאור
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="input-field resize-none h-20"
-                    placeholder="תיאור אופציונלי..."
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                      תיאור
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="input-field resize-none h-20"
+                      placeholder="תיאור אופציונלי..."
+                    />
+                  </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="btn-secondary flex-1"
-                    disabled={submitting}
-                  >
-                    ביטול
-                  </button>
-                  <button type="submit" className="btn-primary flex-1" disabled={submitting}>
-                    {submitting ? (
-                      <div className="spinner w-5 h-5 mx-auto"></div>
-                    ) : editingClass ? 'עדכן' : 'הוסף'}
-                  </button>
-                </div>
-              </form>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="btn-secondary flex-1"
+                      disabled={submitting}
+                    >
+                      ביטול
+                    </button>
+                    <button type="submit" className="btn-primary flex-1" disabled={submitting}>
+                      {submitting ? (
+                        <div className="spinner w-5 h-5 mx-auto"></div>
+                      ) : editingClass ? 'עדכן' : 'הוסף'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
