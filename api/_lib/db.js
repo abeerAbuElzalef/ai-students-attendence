@@ -1,27 +1,45 @@
 const mongoose = require('mongoose');
 
-let cachedConnection = null;
+// Cache the connection promise
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 async function connectToDatabase() {
-  if (cachedConnection && cachedConnection.readyState === 1) {
-    return cachedConnection;
+  // Return cached connection if available
+  if (cached.conn) {
+    return cached.conn;
   }
 
   if (!process.env.MONGODB_URI) {
     throw new Error('MONGODB_URI environment variable is not set');
   }
 
-  try {
-    const connection = await mongoose.connect(process.env.MONGODB_URI, {
+  // If no promise exists, create one
+  if (!cached.promise) {
+    const opts = {
       bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    };
+
+    cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((mongoose) => {
+      console.log('MongoDB connected successfully');
+      return mongoose;
     });
-    cachedConnection = connection.connection;
-    console.log('MongoDB connected for serverless');
-    return cachedConnection;
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
   }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
 }
 
 module.exports = { connectToDatabase };
