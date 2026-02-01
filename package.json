@@ -18,9 +18,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "dependencies": {
+    "concurrently": "^8.2.2",
     "xlsx": "^0.18.5"
   }
 }
