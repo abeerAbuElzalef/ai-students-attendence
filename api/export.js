@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
 
     const ws = xlsx.utils.aoa_to_sheet(data);
     const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, `נוכחות ${month}/${year}`);
+    xlsx.utils.book_append_sheet(wb, ws, `נוכחות ${month}-${year}`);
 
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
