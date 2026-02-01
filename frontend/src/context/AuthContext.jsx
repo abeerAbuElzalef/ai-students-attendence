@@ -28,7 +28,14 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       const response = await api.get('/auth/me');
-      setUser(response.data);
+      const userData = response.data;
+      setUser({
+        _id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        isAdmin: userData.isAdmin || userData.role === 'admin'
+      });
     } catch (error) {
       console.error('Error fetching user:', error);
       logout();
@@ -39,23 +46,39 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
-    const { token: newToken, _id, name, email: userEmail, isAdmin } = response.data;
+    const { token: newToken, _id, name, email: userEmail, role, isAdmin } = response.data;
     
     localStorage.setItem('token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
-    setUser({ _id, name, email: userEmail, isAdmin });
     
-    return { _id, name, email: userEmail, isAdmin };
+    const userData = { 
+      _id, 
+      name, 
+      email: userEmail, 
+      role,
+      isAdmin: isAdmin || role === 'admin' 
+    };
+    setUser(userData);
+    
+    return userData;
   };
 
   const register = async (name, email, password) => {
     const response = await api.post('/auth/register', { name, email, password });
-    const { token: newToken, ...userData } = response.data;
+    const { token: newToken, _id, name: userName, email: userEmail, role, isAdmin } = response.data;
     
     localStorage.setItem('token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
+    
+    const userData = { 
+      _id, 
+      name: userName, 
+      email: userEmail, 
+      role,
+      isAdmin: isAdmin || role === 'admin' 
+    };
     setUser(userData);
     
     return userData;

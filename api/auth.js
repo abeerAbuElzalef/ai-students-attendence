@@ -38,7 +38,11 @@ module.exports = async (req, res) => {
       return res.status(201).json({
         message: 'Registration successful',
         token,
-        teacher: { id: teacher._id, name: teacher.name, email: teacher.email, role: teacher.role }
+        _id: teacher._id,
+        name: teacher.name,
+        email: teacher.email,
+        role: teacher.role,
+        isAdmin: teacher.role === 'admin'
       });
     }
 
@@ -65,7 +69,11 @@ module.exports = async (req, res) => {
       return res.json({
         message: 'Login successful',
         token,
-        teacher: { id: teacher._id, name: teacher.name, email: teacher.email, role: teacher.role }
+        _id: teacher._id,
+        name: teacher.name,
+        email: teacher.email,
+        role: teacher.role,
+        isAdmin: teacher.role === 'admin'
       });
     }
 
@@ -76,7 +84,11 @@ module.exports = async (req, res) => {
         return res.status(authResult.status).json({ error: authResult.error });
       }
       return res.json({
-        teacher: { id: authResult.teacher._id, name: authResult.teacher.name, email: authResult.teacher.email, role: authResult.teacher.role }
+        _id: authResult.teacher._id,
+        name: authResult.teacher.name,
+        email: authResult.teacher.email,
+        role: authResult.teacher.role,
+        isAdmin: authResult.teacher.role === 'admin'
       });
     }
 
