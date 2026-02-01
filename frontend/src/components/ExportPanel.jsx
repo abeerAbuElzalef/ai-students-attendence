@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FiDownload, FiCalendar, FiUser, FiFileText, FiLoader } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { exportApi, studentApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -10,6 +11,7 @@ const HEBREW_MONTHS = [
 ];
 
 export default function ExportPanel({ classId, className }) {
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -54,8 +56,9 @@ export default function ExportPanel({ classId, className }) {
     setExporting(true);
     try {
       const response = await exportApi.downloadMonthlyReport(selectedYear, selectedMonth, classId);
-      // Use Hebrew month name for filename
-      const filename = `נוכחות_${HEBREW_MONTHS[selectedMonth - 1]}_${selectedYear}.xlsx`;
+      // Filename: נוכחות_כיתה_מורה_חודש_שנה.xlsx
+      const teacherName = user?.name || 'מורה';
+      const filename = `נוכחות_${className}_${teacherName}_${HEBREW_MONTHS[selectedMonth - 1]}_${selectedYear}.xlsx`;
       downloadBlob(response.data, filename);
       toast.success('הקובץ הורד בהצלחה');
     } catch (error) {

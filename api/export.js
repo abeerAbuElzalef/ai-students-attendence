@@ -46,7 +46,11 @@ module.exports = async (req, res) => {
     
     const students = await Student.find(studentQuery).populate('class', 'name').sort({ name: 1 });
 
-    let className = 'all-classes';
+    // Get teacher name
+    const teacherName = authResult.teacher.name || 'מורה';
+
+    // Get class name
+    let className = 'כל הכיתות';
     if (classId) {
       const classDoc = await Class.findById(classId);
       if (classDoc) className = classDoc.name;
@@ -168,8 +172,8 @@ module.exports = async (req, res) => {
 
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-    // Filename: "נוכחות_חודש_שנה.xlsx" (e.g., "נוכחות_פברואר_2026.xlsx")
-    const filename = `נוכחות_${hebrewMonth}_${year}.xlsx`;
+    // Filename: "נוכחות_כיתה_מורה_חודש_שנה.xlsx"
+    const filename = `נוכחות_${className}_${teacherName}_${hebrewMonth}_${year}.xlsx`;
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
