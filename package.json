@@ -8,10 +8,19 @@
     "start:frontend": "cd frontend && npm start",
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
-  "keywords": ["attendance", "students", "hebrew", "calendar", "holidays"],
+  "keywords": [
+    "attendance",
+    "students",
+    "hebrew",
+    "calendar",
+    "holidays"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
   }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiUpload, FiX, FiCheck, FiDownload, FiFile } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 import { studentApi } from '../api';
 
 export default function StudentList({ classId, className, classes }) {
@@ -16,6 +17,7 @@ export default function StudentList({ classId, className, classes }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [previewStudents, setPreviewStudents] = useState([]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function StudentList({ classId, className, classes }) {
     }));
 
     try {
-      const response = await studentApi.bulkCreate(studentsToAdd, classId);
+      const response = await studentApi.import(classId, studentsToAdd);
       toast.success(response.data.message);
       setShowBulkModal(false);
       setBulkText('');
@@ -73,22 +75,53 @@ export default function StudentList({ classId, className, classes }) {
     }
   };
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImportFile(file);
+
+    // Parse Excel file
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        // Extract student names from various column names
+        const extractedStudents = jsonData.map(row => {
+          const name = row['שם'] || row['שם התלמיד'] || row['Name'] || row['name'] || row['Student Name'] || Object.values(row)[0];
+          return { name: String(name || '').trim() };
+        }).filter(s => s.name && s.name.length > 0);
+
+        setPreviewStudents(extractedStudents);
+      } catch (error) {
+        console.error('Error parsing Excel:', error);
+        toast.error('שגיאה בקריאת הקובץ');
+        setImportFile(null);
+        setPreviewStudents([]);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const handleImportExcel = async () => {
-    if (!importFile) {
-      toast.error('נא לבחור קובץ');
+    if (previewStudents.length === 0) {
+      toast.error('לא נמצאו תלמידים בקובץ');
       return;
     }
 
     setImporting(true);
-    const formData = new FormData();
-    formData.append('file', importFile);
-    formData.append('classId', classId);
 
     try {
-      const response = await studentApi.import(formData);
-      toast.success(response.data.message);
+      const response = await studentApi.import(classId, previewStudents);
+      toast.success(response.data.message || `${previewStudents.length} תלמידים יובאו בהצלחה`);
       setShowImportModal(false);
       setImportFile(null);
+      setPreviewStudents([]);
       loadStudents();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה בייבוא הקובץ');
@@ -130,7 +163,16 @@ export default function StudentList({ classId, className, classes }) {
   };
 
   const handleDownloadTemplate = () => {
-    window.open(studentApi.downloadTemplate(), '_blank');
+    // Create template Excel file
+    const templateData = [
+      { 'שם': 'ישראל ישראלי' },
+      { 'שם': 'שרה כהן' },
+      { 'שם': 'דוד לוי' }
+    ];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    XLSX.writeFile(wb, 'students_template.xlsx');
   };
 
   const filteredStudents = students.filter(student =>
@@ -206,8 +248,7 @@ export default function StudentList({ classId, className, classes }) {
             {/* Table header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-800/50">
               <div className="col-span-1 text-sm font-semibold text-slate-400">#</div>
-              <div className="col-span-7 text-sm font-semibold text-slate-400">שם התלמיד</div>
-              <div className="col-span-2 text-sm font-semibold text-slate-400">הערות</div>
+              <div className="col-span-9 text-sm font-semibold text-slate-400">שם התלמיד</div>
               <div className="col-span-2 text-sm font-semibold text-slate-400">פעולות</div>
             </div>
 
@@ -226,22 +267,13 @@ export default function StudentList({ classId, className, classes }) {
                   
                   {editingStudent?._id === student._id ? (
                     <>
-                      <div className="col-span-7">
+                      <div className="col-span-9">
                         <input
                           type="text"
                           value={editingStudent.name}
                           onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
                           className="input-field py-1 px-3"
                           autoFocus
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          value={editingStudent.notes || ''}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, notes: e.target.value })}
-                          className="input-field py-1 px-3"
-                          placeholder="הערות"
                         />
                       </div>
                       <div className="col-span-2 flex gap-2">
@@ -261,8 +293,7 @@ export default function StudentList({ classId, className, classes }) {
                     </>
                   ) : (
                     <>
-                      <div className="col-span-7 font-medium">{student.name}</div>
-                      <div className="col-span-2 text-slate-400 text-sm truncate">{student.notes || '-'}</div>
+                      <div className="col-span-9 font-medium">{student.name}</div>
                       <div className="col-span-2 flex gap-2">
                         <button
                           onClick={() => setEditingStudent(student)}
@@ -315,17 +346,6 @@ export default function StudentList({ classId, className, classes }) {
                     className="input-field"
                     placeholder="הזן שם מלא"
                     autoFocus
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">הערות (אופציונלי)</label>
-                  <input
-                    type="text"
-                    value={newStudent.notes}
-                    onChange={(e) => setNewStudent({ ...newStudent, notes: e.target.value })}
-                    className="input-field"
-                    placeholder="הערות נוספות"
                   />
                 </div>
               </div>
@@ -410,19 +430,19 @@ export default function StudentList({ classId, className, classes }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop"
-            onClick={() => setShowImportModal(false)}
+            onClick={() => { setShowImportModal(false); setImportFile(null); setPreviewStudents([]); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 w-full max-w-lg mx-4"
+              className="glass rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-xl font-bold mb-4">ייבוא תלמידים מאקסל</h3>
               
               <p className="text-slate-400 text-sm mb-4">
-                העלה קובץ Excel עם עמודה בשם "שם" או "שם התלמיד"
+                העלה קובץ Excel עם עמודה בשם "שם"
               </p>
 
               <div className="mb-4">
@@ -446,7 +466,7 @@ export default function StudentList({ classId, className, classes }) {
                   ref={fileInputRef}
                   type="file"
                   accept=".xlsx,.xls"
-                  onChange={(e) => setImportFile(e.target.files[0])}
+                  onChange={handleFileSelect}
                   className="hidden"
                 />
                 
@@ -465,18 +485,34 @@ export default function StudentList({ classId, className, classes }) {
                 )}
               </div>
 
+              {/* Preview */}
+              {previewStudents.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-slate-400 mb-2">
+                    תצוגה מקדימה ({previewStudents.length} תלמידים):
+                  </p>
+                  <div className="bg-slate-800/50 rounded-xl p-3 max-h-48 overflow-y-auto">
+                    {previewStudents.map((student, idx) => (
+                      <div key={idx} className="py-1 text-sm border-b border-slate-700/50 last:border-0">
+                        {idx + 1}. {student.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => { setShowImportModal(false); setImportFile(null); }}
+                  onClick={() => { setShowImportModal(false); setImportFile(null); setPreviewStudents([]); }}
                   className="btn-secondary flex-1"
                 >
                   ביטול
                 </button>
                 <button
                   onClick={handleImportExcel}
-                  disabled={!importFile || importing}
+                  disabled={previewStudents.length === 0 || importing}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all
-                    ${importFile && !importing ? 'btn-primary' : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}
+                    ${previewStudents.length > 0 && !importing ? 'btn-primary' : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'}
                   `}
                 >
                   {importing ? (
@@ -484,7 +520,7 @@ export default function StudentList({ classId, className, classes }) {
                   ) : (
                     <>
                       <FiUpload size={18} />
-                      <span>ייבא</span>
+                      <span>ייבא {previewStudents.length} תלמידים</span>
                     </>
                   )}
                 </button>
