@@ -3,6 +3,13 @@ const { Student, Attendance, Class, Holiday } = require('./_lib/models');
 const { verifyAuth } = require('./_lib/auth');
 const xlsx = require('xlsx');
 
+const HEBREW_MONTHS = [
+  'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+  'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+];
+
+const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -57,31 +64,40 @@ module.exports = async (req, res) => {
     const holidayDates = new Set(holidays.map(h => new Date(h.date).getDate()));
 
     const daysInMonth = new Date(year, month, 0).getDate();
+    const hebrewMonth = HEBREW_MONTHS[month - 1];
     
+    // Build headers with Hebrew day names
     const headers = ['שם התלמיד', 'כיתה'];
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month - 1, d);
       const dayOfWeek = date.getDay();
-      const dayNames = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
-      headers.push(`${d} (${dayNames[dayOfWeek]})`);
+      headers.push(`${d} (${HEBREW_DAYS[dayOfWeek]})`);
     }
-    headers.push('סה"כ נוכחות', 'אחוז נוכחות');
+    headers.push('נוכחות', 'חיסורים', 'איחורים', 'מוצדקים', 'אחוז נוכחות');
 
     const data = [headers];
 
     for (const student of students) {
       const row = [student.name, student.class?.name || ''];
       let presentCount = 0;
+      let absentCount = 0;
+      let lateCount = 0;
+      let excusedCount = 0;
       let schoolDays = 0;
 
       for (let d = 1; d <= daysInMonth; d++) {
         const date = new Date(year, month - 1, d);
         const dayOfWeek = date.getDay();
         
-        if (dayOfWeek === 5 || dayOfWeek === 6) {
-          row.push('שבת');
+        // Saturday (6) is Shabbat
+        if (dayOfWeek === 6) {
+          row.push('ש');
           continue;
         }
+        // Friday (5) - could be school day or not depending on the school
+        // For now, treat Friday as school day unless it's a holiday
+        
+        // Check if it's a holiday
         if (holidayDates.has(d)) {
           row.push('חג');
           continue;
@@ -93,32 +109,72 @@ module.exports = async (req, res) => {
           new Date(a.date).getDate() === d
         );
 
-        if (record && record.present) {
-          row.push('✓');
-          presentCount++;
+        if (record) {
+          switch (record.status) {
+            case 'present':
+              row.push('✓');
+              presentCount++;
+              break;
+            case 'absent':
+              row.push('✗');
+              absentCount++;
+              break;
+            case 'late':
+              row.push('א');
+              lateCount++;
+              presentCount++; // Late counts as present for percentage
+              break;
+            case 'excused':
+              row.push('מ');
+              excusedCount++;
+              break;
+            default:
+              // Legacy: if present is boolean
+              if (record.present) {
+                row.push('✓');
+                presentCount++;
+              } else {
+                row.push('✗');
+                absentCount++;
+              }
+          }
         } else {
-          row.push('✗');
+          row.push(''); // No record yet
         }
       }
 
       row.push(presentCount);
+      row.push(absentCount);
+      row.push(lateCount);
+      row.push(excusedCount);
       row.push(schoolDays > 0 ? `${Math.round((presentCount / schoolDays) * 100)}%` : 'N/A');
       data.push(row);
     }
 
+    // Add empty row
+    data.push([]);
+    
+    // Add legend
+    data.push(['מקרא:']);
+    data.push(['✓ = נוכח', '✗ = חיסור', 'א = איחור', 'מ = חיסור מוצדק', 'ש = שבת', 'חג = חג']);
+
     const ws = xlsx.utils.aoa_to_sheet(data);
     const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, `נוכחות ${month}-${year}`);
+    
+    // Sheet name: "חודש שנה" (e.g., "פברואר 2026")
+    xlsx.utils.book_append_sheet(wb, ws, `${hebrewMonth} ${year}`);
 
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-    const filename = `attendance_${className}_${year}_${month}.xlsx`;
+    // Filename: "נוכחות_חודש_שנה.xlsx" (e.g., "נוכחות_פברואר_2026.xlsx")
+    const filename = `נוכחות_${hebrewMonth}_${year}.xlsx`;
+    
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
     
     res.send(buffer);
   } catch (error) {
     console.error('Export error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 };

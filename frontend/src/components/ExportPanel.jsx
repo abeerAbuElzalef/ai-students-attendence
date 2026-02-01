@@ -54,7 +54,8 @@ export default function ExportPanel({ classId, className }) {
     setExporting(true);
     try {
       const response = await exportApi.downloadMonthlyReport(selectedYear, selectedMonth, classId);
-      const filename = `attendance_${className}_${selectedYear}_${String(selectedMonth).padStart(2, '0')}.xlsx`;
+      // Use Hebrew month name for filename
+      const filename = `נוכחות_${HEBREW_MONTHS[selectedMonth - 1]}_${selectedYear}.xlsx`;
       downloadBlob(response.data, filename);
       toast.success('הקובץ הורד בהצלחה');
     } catch (error) {
