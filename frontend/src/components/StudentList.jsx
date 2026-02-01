@@ -13,7 +13,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [newStudent, setNewStudent] = useState({ name: '', notes: '' });
+  const [newStudent, setNewStudent] = useState({ firstName: '', lastName: '' });
   const [bulkText, setBulkText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('firstName'); // 'firstName' or 'lastName'
@@ -33,15 +33,19 @@ export default function StudentList({ classId, className, classes, onStudentChan
   const sortStudents = (studentList, sortType) => {
     return [...studentList].sort((a, b) => {
       if (sortType === 'lastName') {
-        // Get last word as last name
-        const aLastName = a.name.split(' ').pop() || a.name;
-        const bLastName = b.name.split(' ').pop() || b.name;
-        return aLastName.localeCompare(bLastName, 'he');
+        const result = a.lastName.localeCompare(b.lastName, 'he');
+        if (result !== 0) return result;
+        return a.firstName.localeCompare(b.firstName, 'he');
       }
-      // Default: sort by first name (full name from start)
-      return a.name.localeCompare(b.name, 'he');
+      // Default: sort by first name
+      const result = a.firstName.localeCompare(b.firstName, 'he');
+      if (result !== 0) return result;
+      return a.lastName.localeCompare(b.lastName, 'he');
     });
   };
+
+  // Get full name for display
+  const getFullName = (student) => `${student.firstName} ${student.lastName}`;
 
   const loadStudents = async () => {
     try {
@@ -64,8 +68,8 @@ export default function StudentList({ classId, className, classes, onStudentChan
   }, [sortBy]);
 
   const handleAddStudent = async () => {
-    if (!newStudent.name.trim()) {
-      toast.error('נא להזין שם תלמיד');
+    if (!newStudent.firstName.trim() || !newStudent.lastName.trim()) {
+      toast.error('נא להזין שם פרטי ושם משפחה');
       return;
     }
 
@@ -73,10 +77,10 @@ export default function StudentList({ classId, className, classes, onStudentChan
     setSubmitting(true);
 
     try {
-      await studentApi.create(newStudent.name, classId, newStudent.notes);
+      await studentApi.create(newStudent.firstName.trim(), newStudent.lastName.trim(), classId);
       toast.success('התלמיד נוסף בהצלחה');
       setShowAddModal(false);
-      setNewStudent({ name: '', notes: '' });
+      setNewStudent({ firstName: '', lastName: '' });
       loadStudents();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה בהוספת התלמיד');
@@ -95,9 +99,24 @@ export default function StudentList({ classId, className, classes, onStudentChan
     if (submitting) return; // Prevent double submission
     setSubmitting(true);
 
-    const studentsToAdd = lines.map(line => ({
-      name: line.trim()
-    }));
+    // Parse each line as "firstName, lastName" or "firstName lastName"
+    const studentsToAdd = lines.map(line => {
+      const parts = line.includes(',') 
+        ? line.split(',').map(p => p.trim())
+        : line.trim().split(/\s+/);
+      
+      if (parts.length >= 2) {
+        return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+      }
+      // If only one word, use it as firstName and prompt for lastName
+      return { firstName: parts[0], lastName: '' };
+    }).filter(s => s.firstName && s.lastName);
+
+    if (studentsToAdd.length === 0) {
+      toast.error('נא להזין שם פרטי ושם משפחה לכל תלמיד (מופרדים בפסיק או רווח)');
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const response = await studentApi.import(classId, studentsToAdd);
@@ -128,11 +147,15 @@ export default function StudentList({ classId, className, classes, onStudentChan
         const sheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-        // Extract student names from various column names
+        // Extract firstName and lastName from Excel columns
         const extractedStudents = jsonData.map(row => {
-          const name = row['שם'] || row['שם התלמיד'] || row['Name'] || row['name'] || row['Student Name'] || Object.values(row)[0];
-          return { name: String(name || '').trim() };
-        }).filter(s => s.name && s.name.length > 0);
+          const firstName = row['שם פרטי'] || row['firstName'] || row['First Name'] || '';
+          const lastName = row['שם משפחה'] || row['lastName'] || row['Last Name'] || '';
+          return { 
+            firstName: String(firstName).trim(), 
+            lastName: String(lastName).trim() 
+          };
+        }).filter(s => s.firstName && s.lastName);
 
         setPreviewStudents(extractedStudents);
       } catch (error) {
@@ -167,15 +190,15 @@ export default function StudentList({ classId, className, classes, onStudentChan
   };
 
   const handleUpdateStudent = async () => {
-    if (!editingStudent.name.trim()) {
-      toast.error('נא להזין שם תלמיד');
+    if (!editingStudent.firstName.trim() || !editingStudent.lastName.trim()) {
+      toast.error('נא להזין שם פרטי ושם משפחה');
       return;
     }
 
     try {
       await studentApi.update(editingStudent._id, {
-        name: editingStudent.name,
-        notes: editingStudent.notes
+        firstName: editingStudent.firstName,
+        lastName: editingStudent.lastName
       });
       toast.success('התלמיד עודכן בהצלחה');
       setEditingStudent(null);
@@ -200,11 +223,11 @@ export default function StudentList({ classId, className, classes, onStudentChan
   };
 
   const handleDownloadTemplate = () => {
-    // Create template Excel file
+    // Create template Excel file with firstName and lastName columns
     const templateData = [
-      { 'שם': 'ישראל ישראלי' },
-      { 'שם': 'שרה כהן' },
-      { 'שם': 'דוד לוי' }
+      { 'שם פרטי': 'ישראל', 'שם משפחה': 'ישראלי' },
+      { 'שם פרטי': 'שרה', 'שם משפחה': 'כהן' },
+      { 'שם פרטי': 'דוד', 'שם משפחה': 'לוי' }
     ];
     const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
@@ -212,9 +235,12 @@ export default function StudentList({ classId, className, classes, onStudentChan
     XLSX.writeFile(wb, 'students_template.xlsx');
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name.includes(searchTerm)
-  );
+  const filteredStudents = students.filter(student => {
+    const fullName = `${student.firstName} ${student.lastName}`;
+    return fullName.includes(searchTerm) || 
+           student.firstName.includes(searchTerm) || 
+           student.lastName.includes(searchTerm);
+  });
 
   return (
     <div className="space-y-6">
@@ -345,13 +371,21 @@ export default function StudentList({ classId, className, classes, onStudentChan
                   
                   {editingStudent?._id === student._id ? (
                     <>
-                      <div className="col-span-7">
+                      <div className="col-span-7 flex gap-2">
                         <input
                           type="text"
-                          value={editingStudent.name}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                          className="input-field py-1 px-3"
+                          value={editingStudent.firstName}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, firstName: e.target.value })}
+                          className="input-field py-1 px-3 flex-1"
+                          placeholder="שם פרטי"
                           autoFocus
+                        />
+                        <input
+                          type="text"
+                          value={editingStudent.lastName}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, lastName: e.target.value })}
+                          className="input-field py-1 px-3 flex-1"
+                          placeholder="שם משפחה"
                         />
                       </div>
                       <div className="col-span-4 flex gap-2 justify-end">
@@ -373,7 +407,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
                     </>
                   ) : (
                     <>
-                      <div className="col-span-7 font-medium">{student.name}</div>
+                      <div className="col-span-7 font-medium">{student.firstName} {student.lastName}</div>
                       <div className="col-span-4 flex gap-2 justify-end">
                         <button
                           onClick={() => setEditingStudent(student)}
@@ -384,7 +418,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
                           <span>ערוך</span>
                         </button>
                         <button
-                          onClick={() => handleDeleteStudent(student._id, student.name)}
+                          onClick={() => handleDeleteStudent(student._id, `${student.firstName} ${student.lastName}`)}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-error/20 hover:bg-error/30 text-error transition-colors text-sm"
                           title="מחיקה"
                         >
@@ -423,14 +457,24 @@ export default function StudentList({ classId, className, classes, onStudentChan
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">שם התלמיד</label>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">שם פרטי</label>
                     <input
                       type="text"
-                      value={newStudent.name}
-                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                      value={newStudent.firstName}
+                      onChange={(e) => setNewStudent({ ...newStudent, firstName: e.target.value })}
                       className="input-field"
-                      placeholder="הזן שם מלא"
+                      placeholder="הזן שם פרטי"
                       autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">שם משפחה</label>
+                    <input
+                      type="text"
+                      value={newStudent.lastName}
+                      onChange={(e) => setNewStudent({ ...newStudent, lastName: e.target.value })}
+                      className="input-field"
+                      placeholder="הזן שם משפחה"
                     />
                   </div>
                 </div>
@@ -479,15 +523,15 @@ export default function StudentList({ classId, className, classes, onStudentChan
                 <h3 className="text-xl font-bold mb-4">הוספת תלמידים מרובים</h3>
                 
                 <p className="text-slate-400 text-sm mb-4">
-                  הזן שם תלמיד בכל שורה
+                  הזן שם פרטי ושם משפחה בכל שורה (מופרדים ברווח או פסיק)
                 </p>
 
                 <textarea
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
                   className="input-field h-64 resize-none"
-                  placeholder={`דוד לוי
-שרה כהן
+                  placeholder={`דוד, לוי
+שרה, כהן
 משה ישראלי
 רחל אברהם`}
                   dir="rtl"
@@ -589,7 +633,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
                     <div className="bg-slate-800/50 rounded-xl p-3 max-h-48 overflow-y-auto">
                       {previewStudents.map((student, idx) => (
                         <div key={idx} className="py-1 text-sm border-b border-slate-700/50 last:border-0">
-                          {idx + 1}. {student.name}
+                          {idx + 1}. {student.firstName} {student.lastName}
                         </div>
                       ))}
                     </div>

@@ -160,7 +160,7 @@ export default function DailyAttendance({ classId, date, onClose }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-slate-500 text-sm w-6">{index + 1}</span>
-                        <p className="font-medium">{student.name}</p>
+                        <p className="font-medium">{student.firstName} {student.lastName}</p>
                       </div>
                       
                       {/* Toggle buttons */}

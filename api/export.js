@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
     const data = [headers];
 
     for (const student of students) {
-      const row = [student.name, student.class?.name || ''];
+      const row = [`${student.firstName} ${student.lastName}`, student.class?.name || ''];
       let presentCount = 0;
       let absentCount = 0;
       let lateCount = 0;

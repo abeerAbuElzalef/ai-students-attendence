@@ -30,10 +30,16 @@ const classSchema = new mongoose.Schema({
 
 // Student Schema
 const studentSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
   class: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true },
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
   createdAt: { type: Date, default: Date.now }
+});
+
+// Virtual for full name
+studentSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`;
 });
 
 // Attendance Schema

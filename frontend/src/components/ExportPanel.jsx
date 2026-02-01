@@ -77,7 +77,8 @@ export default function ExportPanel({ classId, className }) {
     try {
       const student = students.find(s => s._id === selectedStudent);
       const response = await exportApi.downloadStudentReport(selectedStudent, studentYear);
-      const filename = `student_${student?.name || 'report'}_${studentYear}.xlsx`;
+      const studentName = student ? `${student.firstName}_${student.lastName}` : 'report';
+      const filename = `student_${studentName}_${studentYear}.xlsx`;
       downloadBlob(response.data, filename);
       toast.success('הקובץ הורד בהצלחה');
     } catch (error) {
@@ -193,7 +194,7 @@ export default function ExportPanel({ classId, className }) {
               <option value="">-- בחר תלמיד --</option>
               {students.map((student) => (
                 <option key={student._id} value={student._id}>
-                  {student.name}
+                  {student.firstName} {student.lastName}
                 </option>
               ))}
             </select>

@@ -38,7 +38,7 @@ export const classApi = {
 export const studentApi = {
   getAll: (classId = null) => api.get('/students', { params: { classId } }),
   getById: (id) => api.get(`/students/${id}`),
-  create: (name, classId) => api.post('/students', { name, classId }),
+  create: (firstName, lastName, classId) => api.post('/students', { firstName, lastName, classId }),
   import: (classId, students) => api.post('/students/import', { classId, students }),
   update: (id, data) => api.put(`/students/${id}`, data),
   delete: (id) => api.delete(`/students/${id}`)

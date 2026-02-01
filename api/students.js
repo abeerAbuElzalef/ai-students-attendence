@@ -37,35 +37,42 @@ module.exports = async (req, res) => {
       }
       const createdStudents = [];
       for (const studentData of students) {
-        const name = studentData.name || studentData['שם'] || studentData['Name'];
-        if (name && name.trim()) {
-          const student = new Student({ name: name.trim(), class: bodyClassId, teacher: teacherId });
+        const firstName = studentData.firstName || studentData['שם פרטי'] || '';
+        const lastName = studentData.lastName || studentData['שם משפחה'] || '';
+        
+        if (firstName.trim() && lastName.trim()) {
+          const student = new Student({ 
+            firstName: firstName.trim(), 
+            lastName: lastName.trim(),
+            class: bodyClassId, 
+            teacher: teacherId 
+          });
           await student.save();
           createdStudents.push(student);
         }
       }
-      return res.status(201).json({ message: `${createdStudents.length} students imported`, students: createdStudents });
+      return res.status(201).json({ message: `${createdStudents.length} תלמידים יובאו בהצלחה`, students: createdStudents });
     }
 
     // GET /api/students - List all students
     if (!id && req.method === 'GET') {
       let query = { teacher: teacherId };
       if (classId) query.class = classId;
-      const students = await Student.find(query).populate('class', 'name').sort({ name: 1 });
+      const students = await Student.find(query).populate('class', 'name').sort({ lastName: 1, firstName: 1 });
       return res.json(students);
     }
 
     // POST /api/students - Create new student
     if (!id && req.method === 'POST') {
-      const { name, classId: bodyClassId } = req.body;
-      if (!name || !bodyClassId) {
-        return res.status(400).json({ error: 'Name and classId are required' });
+      const { firstName, lastName, classId: bodyClassId } = req.body;
+      if (!firstName || !lastName || !bodyClassId) {
+        return res.status(400).json({ error: 'firstName, lastName and classId are required' });
       }
       const classDoc = await Class.findOne({ _id: bodyClassId, teacher: teacherId });
       if (!classDoc) {
         return res.status(404).json({ error: 'Class not found' });
       }
-      const student = new Student({ name, class: bodyClassId, teacher: teacherId });
+      const student = new Student({ firstName, lastName, class: bodyClassId, teacher: teacherId });
       await student.save();
       const populated = await Student.findById(student._id).populate('class', 'name');
       return res.status(201).json(populated);
@@ -84,9 +91,12 @@ module.exports = async (req, res) => {
       }
 
       if (req.method === 'PUT') {
-        const { name } = req.body;
-        if (!name) return res.status(400).json({ error: 'Name is required' });
-        student.name = name;
+        const { firstName, lastName } = req.body;
+        if (!firstName || !lastName) {
+          return res.status(400).json({ error: 'firstName and lastName are required' });
+        }
+        student.firstName = firstName;
+        student.lastName = lastName;
         await student.save();
         const populated = await Student.findById(id).populate('class', 'name');
         return res.json(populated);

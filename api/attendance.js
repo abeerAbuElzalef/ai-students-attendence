@@ -48,7 +48,8 @@ module.exports = async (req, res) => {
         return {
           _id: student._id,
           id: student._id,
-          name: student.name,
+          firstName: student.firstName,
+          lastName: student.lastName,
           class: student.class,
           present: record ? record.present : false
         };
