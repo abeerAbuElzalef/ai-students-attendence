@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiUsers, FiFolder, FiActivity, FiTrash2, FiAlertTriangle,
-  FiUser, FiCalendar, FiDatabase, FiClock
+  FiUser, FiCalendar, FiDatabase, FiClock, FiShield
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { adminApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
   const [teachers, setTeachers] = useState([]);
@@ -285,29 +287,44 @@ export default function AdminDashboard() {
                 <div className="col-span-2">פעולות</div>
               </div>
               
-              {teachers.map(teacher => (
-                <div key={teacher._id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                  <div className="col-span-3 font-medium">{teacher.name}</div>
-                  <div className="col-span-3 text-slate-400 text-sm">{teacher.email}</div>
-                  <div className="col-span-2">
-                    <span className="px-2 py-1 bg-primary-500/20 text-primary-400 rounded-lg text-sm">
-                      {teacher.classCount} כיתות
-                    </span>
+              {teachers.map(teacher => {
+                const isCurrentUser = user && (user._id === teacher._id || user.email === teacher.email);
+                return (
+                  <div key={teacher._id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
+                    <div className="col-span-3 font-medium flex items-center gap-2">
+                      {teacher.name}
+                      {isCurrentUser && (
+                        <span className="px-2 py-0.5 bg-primary-500/20 text-primary-400 rounded text-xs">אתה</span>
+                      )}
+                      {teacher.role === 'admin' && (
+                        <FiShield size={14} className="text-warning" title="מנהל" />
+                      )}
+                    </div>
+                    <div className="col-span-3 text-slate-400 text-sm">{teacher.email}</div>
+                    <div className="col-span-2">
+                      <span className="px-2 py-1 bg-primary-500/20 text-primary-400 rounded-lg text-sm">
+                        {teacher.classCount} כיתות
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-sm text-slate-400">
+                      {formatDate(teacher.lastLogin)}
+                    </div>
+                    <div className="col-span-2">
+                      {isCurrentUser ? (
+                        <span className="text-xs text-slate-500">לא ניתן למחוק את עצמך</span>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirm({ type: 'teacher', item: teacher })}
+                          className="p-2 rounded-lg hover:bg-error/20 text-slate-400 hover:text-error transition-colors"
+                          title="מחק מורה"
+                        >
+                          <FiTrash2 size={18} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="col-span-2 text-sm text-slate-400">
-                    {formatDate(teacher.lastLogin)}
-                  </div>
-                  <div className="col-span-2">
-                    <button
-                      onClick={() => setDeleteConfirm({ type: 'teacher', item: teacher })}
-                      className="p-2 rounded-lg hover:bg-error/20 text-slate-400 hover:text-error transition-colors"
-                      title="מחק מורה"
-                    >
-                      <FiTrash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               {teachers.length === 0 && (
                 <div className="px-6 py-12 text-center text-slate-400">
