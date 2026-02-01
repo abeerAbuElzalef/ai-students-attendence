@@ -7,6 +7,7 @@ import { classApi } from '../api';
 export default function ClassManager({ selectedClass, onSelectClass, onClassesChange }) {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [formData, setFormData] = useState({ name: '', year: '', description: '' });
@@ -39,6 +40,9 @@ export default function ClassManager({ selectedClass, onSelectClass, onClassesCh
       return;
     }
 
+    if (submitting) return; // Prevent double submission
+    setSubmitting(true);
+
     try {
       if (editingClass) {
         await classApi.update(editingClass._id, formData);
@@ -56,6 +60,8 @@ export default function ClassManager({ selectedClass, onSelectClass, onClassesCh
       loadClasses();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה בשמירת הכיתה');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -250,11 +256,14 @@ export default function ClassManager({ selectedClass, onSelectClass, onClassesCh
                     type="button"
                     onClick={() => setShowModal(false)}
                     className="btn-secondary flex-1"
+                    disabled={submitting}
                   >
                     ביטול
                   </button>
-                  <button type="submit" className="btn-primary flex-1">
-                    {editingClass ? 'עדכן' : 'הוסף'}
+                  <button type="submit" className="btn-primary flex-1" disabled={submitting}>
+                    {submitting ? (
+                      <div className="spinner w-5 h-5 mx-auto"></div>
+                    ) : editingClass ? 'עדכן' : 'הוסף'}
                   </button>
                 </div>
               </form>

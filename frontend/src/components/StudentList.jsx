@@ -17,6 +17,7 @@ export default function StudentList({ classId, className, classes }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [previewStudents, setPreviewStudents] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -42,6 +43,9 @@ export default function StudentList({ classId, className, classes }) {
       return;
     }
 
+    if (submitting) return; // Prevent double submission
+    setSubmitting(true);
+
     try {
       await studentApi.create(newStudent.name, classId, newStudent.notes);
       toast.success('התלמיד נוסף בהצלחה');
@@ -50,6 +54,8 @@ export default function StudentList({ classId, className, classes }) {
       loadStudents();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה בהוספת התלמיד');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -59,6 +65,9 @@ export default function StudentList({ classId, className, classes }) {
       toast.error('נא להזין שמות תלמידים');
       return;
     }
+
+    if (submitting) return; // Prevent double submission
+    setSubmitting(true);
 
     const studentsToAdd = lines.map(line => ({
       name: line.trim()
@@ -72,6 +81,8 @@ export default function StudentList({ classId, className, classes }) {
       loadStudents();
     } catch (error) {
       toast.error(error.response?.data?.error || 'שגיאה בהוספת התלמידים');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -360,14 +371,16 @@ export default function StudentList({ classId, className, classes }) {
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="btn-secondary flex-1"
+                  disabled={submitting}
                 >
                   ביטול
                 </button>
                 <button
                   onClick={handleAddStudent}
                   className="btn-primary flex-1"
+                  disabled={submitting}
                 >
-                  הוסף
+                  {submitting ? <div className="spinner w-5 h-5 mx-auto"></div> : 'הוסף'}
                 </button>
               </div>
             </motion.div>
@@ -413,14 +426,16 @@ export default function StudentList({ classId, className, classes }) {
                 <button
                   onClick={() => setShowBulkModal(false)}
                   className="btn-secondary flex-1"
+                  disabled={submitting}
                 >
                   ביטול
                 </button>
                 <button
                   onClick={handleBulkAdd}
                   className="btn-primary flex-1"
+                  disabled={submitting}
                 >
-                  הוסף {bulkText.split('\n').filter(l => l.trim()).length} תלמידים
+                  {submitting ? <div className="spinner w-5 h-5 mx-auto"></div> : `הוסף ${bulkText.split('\n').filter(l => l.trim()).length} תלמידים`}
                 </button>
               </div>
             </motion.div>
