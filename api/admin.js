@@ -25,12 +25,14 @@ module.exports = async (req, res) => {
 
     // GET /api/admin/dashboard - Get dashboard stats
     if (resource === 'dashboard' && req.method === 'GET') {
-      const totalTeachers = await Teacher.countDocuments();
+      // Count only teachers (exclude admins)
+      const totalTeachers = await Teacher.countDocuments({ role: { $ne: 'admin' } });
       const totalClasses = await Class.countDocuments();
       const totalStudents = await Student.countDocuments();
       const totalAttendanceRecords = await Attendance.countDocuments();
 
-      const recentTeachers = await Teacher.find()
+      // Get recent teachers (exclude admins)
+      const recentTeachers = await Teacher.find({ role: { $ne: 'admin' } })
         .select('-password')
         .sort({ createdAt: -1 })
         .limit(5);
@@ -40,7 +42,7 @@ module.exports = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(5);
 
-      // Classes per teacher
+      // Classes per teacher (exclude admins)
       const classesPerTeacher = await Class.aggregate([
         {
           $group: {
@@ -58,6 +60,11 @@ module.exports = async (req, res) => {
         },
         {
           $unwind: '$teacherInfo'
+        },
+        {
+          $match: {
+            'teacherInfo.role': { $ne: 'admin' }
+          }
         },
         {
           $project: {
@@ -82,9 +89,9 @@ module.exports = async (req, res) => {
       });
     }
 
-    // GET /api/admin/teachers
+    // GET /api/admin/teachers (exclude admins from the list)
     if (resource === 'teachers' && !id && req.method === 'GET') {
-      const teachers = await Teacher.find().select('-password').sort({ createdAt: -1 });
+      const teachers = await Teacher.find({ role: { $ne: 'admin' } }).select('-password').sort({ createdAt: -1 });
       const teachersWithStats = await Promise.all(teachers.map(async (teacher) => {
         const classCount = await Class.countDocuments({ teacher: teacher._id });
         const studentCount = await Student.countDocuments({ teacher: teacher._id });
