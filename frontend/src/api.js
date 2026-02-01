@@ -64,14 +64,16 @@ export const calendarApi = {
 
 // Export API
 export const exportApi = {
-  getMonthlyReportUrl: (year, month, classId = null) => {
-    const token = localStorage.getItem('token');
-    const params = new URLSearchParams();
-    if (classId) params.append('classId', classId);
-    params.append('year', year);
-    params.append('month', month);
-    return `${API_BASE}/export/monthly?${params.toString()}`;
-  }
+  downloadMonthlyReport: (year, month, classId = null) => 
+    api.get('/export/monthly', { 
+      params: { year, month, classId },
+      responseType: 'blob'
+    }),
+  downloadStudentReport: (studentId, year) =>
+    api.get('/export/student', {
+      params: { studentId, year },
+      responseType: 'blob'
+    })
 };
 
 // Admin API

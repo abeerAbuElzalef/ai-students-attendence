@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiDownload, FiCalendar, FiUser, FiFileText } from 'react-icons/fi';
+import { FiDownload, FiCalendar, FiUser, FiFileText, FiLoader } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { exportApi, studentApi } from '../api';
 
@@ -12,6 +12,7 @@ const HEBREW_MONTHS = [
 export default function ExportPanel({ classId, className }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   
   // Monthly export state
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -37,20 +38,49 @@ export default function ExportPanel({ classId, className }) {
     setLoading(false);
   };
 
-  const handleMonthlyExport = () => {
-    const url = exportApi.getMonthlyReportUrl(selectedYear, selectedMonth, classId);
-    window.open(url, '_blank');
-    toast.success('הקובץ מוכן להורדה');
+  // Helper function to download blob as file
+  const downloadBlob = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
-  const handleStudentExport = () => {
+  const handleMonthlyExport = async () => {
+    setExporting(true);
+    try {
+      const response = await exportApi.downloadMonthlyReport(selectedYear, selectedMonth, classId);
+      const filename = `attendance_${className}_${selectedYear}_${String(selectedMonth).padStart(2, '0')}.xlsx`;
+      downloadBlob(response.data, filename);
+      toast.success('הקובץ הורד בהצלחה');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('שגיאה בהורדת הדוח');
+    }
+    setExporting(false);
+  };
+
+  const handleStudentExport = async () => {
     if (!selectedStudent) {
       toast.error('נא לבחור תלמיד');
       return;
     }
-    const url = exportApi.getStudentReportUrl(selectedStudent, studentYear);
-    window.open(url, '_blank');
-    toast.success('הקובץ מוכן להורדה');
+    setExporting(true);
+    try {
+      const student = students.find(s => s._id === selectedStudent);
+      const response = await exportApi.downloadStudentReport(selectedStudent, studentYear);
+      const filename = `student_${student?.name || 'report'}_${studentYear}.xlsx`;
+      downloadBlob(response.data, filename);
+      toast.success('הקובץ הורד בהצלחה');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('שגיאה בהורדת הדוח');
+    }
+    setExporting(false);
   };
 
   const currentYear = new Date().getFullYear();
@@ -104,10 +134,11 @@ export default function ExportPanel({ classId, className }) {
 
           <button
             onClick={handleMonthlyExport}
-            className="btn-primary w-full flex items-center justify-center gap-2"
+            disabled={exporting}
+            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <FiDownload size={20} />
-            <span>הורד דוח חודשי</span>
+            {exporting ? <FiLoader size={20} className="animate-spin" /> : <FiDownload size={20} />}
+            <span>{exporting ? 'מוריד...' : 'הורד דוח חודשי'}</span>
           </button>
         </div>
 
@@ -179,17 +210,17 @@ export default function ExportPanel({ classId, className }) {
 
           <button
             onClick={handleStudentExport}
-            disabled={!selectedStudent}
+            disabled={!selectedStudent || exporting}
             className={`
               w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all
-              ${selectedStudent 
+              ${selectedStudent && !exporting
                 ? 'btn-primary' 
                 : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
               }
             `}
           >
-            <FiDownload size={20} />
-            <span>הורד דוח תלמיד</span>
+            {exporting ? <FiLoader size={20} className="animate-spin" /> : <FiDownload size={20} />}
+            <span>{exporting ? 'מוריד...' : 'הורד דוח תלמיד'}</span>
           </button>
         </div>
 
