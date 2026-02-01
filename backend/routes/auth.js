@@ -66,10 +66,15 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
     }
 
+    // Update last login
+    teacher.lastLogin = new Date();
+    await teacher.save();
+
     res.json({
       _id: teacher._id,
       name: teacher.name,
       email: teacher.email,
+      isAdmin: teacher.isAdmin,
       token: generateToken(teacher._id)
     });
   } catch (error) {
@@ -86,7 +91,8 @@ router.get('/me', protect, async (req, res) => {
     res.json({
       _id: req.teacher._id,
       name: req.teacher.name,
-      email: req.teacher.email
+      email: req.teacher.email,
+      isAdmin: req.teacher.isAdmin
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

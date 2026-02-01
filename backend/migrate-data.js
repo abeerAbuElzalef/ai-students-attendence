@@ -39,7 +39,27 @@ async function migrate() {
       console.log('ℹ️  No SQLite database found, creating fresh data\n');
     }
     
-    // 1. Create Teacher Account
+    // 1. Create Admin Account
+    console.log('👑 Creating admin account...');
+    
+    let admin = await Teacher.findOne({ email: 'admin@attendance.local' });
+    
+    if (!admin) {
+      admin = new Teacher({
+        name: 'מנהל מערכת',
+        email: 'admin@attendance.local',
+        password: 'admin123',
+        isAdmin: true
+      });
+      await admin.save();
+      console.log('   ✅ Admin created: מנהל מערכת');
+      console.log('   📧 Email: admin@attendance.local');
+      console.log('   🔑 Password: admin123\n');
+    } else {
+      console.log('   ℹ️  Admin already exists\n');
+    }
+
+    // 2. Create Teacher Account
     console.log('📝 Creating teacher account...');
     
     let teacher = await Teacher.findOne({ email: 'abeer.abuelzalef@gmail.com' });
@@ -48,7 +68,8 @@ async function migrate() {
       teacher = new Teacher({
         name: 'עביר אבו אל זלף',
         email: 'abeer.abuelzalef@gmail.com',
-        password: 'password123' // Will be hashed by pre-save hook
+        password: 'password123',
+        isAdmin: false
       });
       await teacher.save();
       console.log('   ✅ Teacher created: עביר אבו אל זלף (abeer.abuelzalef@gmail.com)');
@@ -58,7 +79,7 @@ async function migrate() {
       console.log('   ℹ️  Teacher already exists\n');
     }
     
-    // 2. Create Class
+    // 3. Create Class
     console.log('📚 Creating class...');
     
     let cls = await Class.findOne({ name: 'כיתה ג1', teacher: teacher._id });
@@ -219,9 +240,15 @@ async function migrate() {
     console.log('═══════════════════════════════════════════════════════');
     console.log('                   MIGRATION COMPLETE                   ');
     console.log('═══════════════════════════════════════════════════════');
-    console.log(`   👩‍🏫 Teacher: עביר אבו אל זלף`);
-    console.log(`   📧 Email: abeer.abuelzalef@gmail.com`);
-    console.log(`   🔑 Password: password123`);
+    console.log('');
+    console.log('   👑 ADMIN ACCOUNT:');
+    console.log('   📧 Email: admin@attendance.local');
+    console.log('   🔑 Password: admin123');
+    console.log('');
+    console.log('   👩‍🏫 TEACHER ACCOUNT:');
+    console.log('   📧 Email: abeer.abuelzalef@gmail.com');
+    console.log('   🔑 Password: password123');
+    console.log('');
     console.log(`   📚 Classes: 1 (כיתה ג1)`);
     console.log(`   👥 Students: ${totalStudents}`);
     console.log(`   📋 Attendance Records: ${totalAttendance}`);

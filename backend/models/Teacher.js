@@ -20,6 +20,13 @@ const teacherSchema = new mongoose.Schema({
     required: [true, 'סיסמה היא שדה חובה'],
     minlength: [6, 'הסיסמה חייבת להכיל לפחות 6 תווים']
   },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  lastLogin: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now

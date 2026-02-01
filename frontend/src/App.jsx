@@ -5,6 +5,7 @@ import { FiCalendar, FiUsers, FiDownload, FiBarChart2, FiLogOut, FiUser } from '
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
 import Calendar from './components/Calendar';
 import StudentList from './components/StudentList';
 import DailyAttendance from './components/DailyAttendance';
@@ -39,6 +40,64 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  // Show admin dashboard for admin users
+  if (user?.isAdmin) {
+    return (
+      <div className="min-h-screen">
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: 'rgba(30, 41, 59, 0.95)',
+              color: '#f1f5f9',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              backdropFilter: 'blur(8px)',
+            },
+          }}
+        />
+        
+        {/* Admin Header */}
+        <header className="glass sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/25">
+                  <span className="text-2xl font-bold text-white">מ</span>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold gradient-text">מערכת נוכחות</h1>
+                  <p className="text-sm text-red-400">מצב מנהל</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/30">
+                  <FiUser size={16} className="text-red-400" />
+                  <span className="text-sm font-medium text-red-400">{user?.name} (מנהל)</span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="p-2.5 rounded-xl hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
+                  title="התנתק"
+                >
+                  <FiLogOut size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-4 py-6">
+          <AdminDashboard />
+        </main>
+
+        <footer className="text-center py-6 text-slate-500 text-sm">
+          <p>מערכת מעקב נוכחות תלמידים - לוח מנהל © {new Date().getFullYear()}</p>
+        </footer>
+      </div>
+    );
   }
 
   const selectedClassName = classes.find(c => c._id === selectedClass)?.name || '';

@@ -16,6 +16,7 @@ const attendanceRoutes = require('./routes/attendance');
 const calendarRoutes = require('./routes/calendar');
 const holidayRoutes = require('./routes/holidays');
 const exportRoutes = require('./routes/export');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +37,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

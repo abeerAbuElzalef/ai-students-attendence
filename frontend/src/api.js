@@ -84,4 +84,14 @@ export const exportApi = {
   getStudentReportUrl: (studentId, year) => `${API_BASE}/export/student/${studentId}/${year}`
 };
 
+// Admin API
+export const adminApi = {
+  getDashboard: () => api.get('/admin/dashboard'),
+  getTeachers: () => api.get('/admin/teachers'),
+  deleteTeacher: (id) => api.delete(`/admin/teachers/${id}`),
+  getClasses: () => api.get('/admin/classes'),
+  deleteClass: (id) => api.delete(`/admin/classes/${id}`),
+  getActivity: () => api.get('/admin/activity')
+};
+
 export default api;
