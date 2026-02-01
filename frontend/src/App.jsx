@@ -130,7 +130,7 @@ function AppContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/25">
-                  <span className="text-2xl font-bold text-white">מ</span>
+                  <span className="text-2xl">🎓</span>
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold gradient-text">מערכת נוכחות</h1>
@@ -176,7 +176,7 @@ function AppContent() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg shadow-primary-500/25">
-                <span className="text-2xl font-bold text-white">נ</span>
+                <span className="text-2xl">🎓</span>
               </div>
               <div>
                 <h1 className="text-2xl font-bold gradient-text">מערכת נוכחות</h1>

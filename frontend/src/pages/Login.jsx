@@ -60,7 +60,7 @@ export default function Login() {
             transition={{ type: "spring", bounce: 0.5 }}
             className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-xl shadow-primary-500/25"
           >
-            <span className="text-4xl font-bold text-white">נ</span>
+            <span className="text-5xl">🎓</span>
           </motion.div>
           <h1 className="text-3xl font-bold gradient-text mb-2">מערכת נוכחות</h1>
           <p className="text-slate-400">מעקב נוכחות תלמידים</p>
