@@ -139,7 +139,9 @@ module.exports = async (req, res) => {
               }
           }
         } else {
-          row.push(''); // No record yet
+          // No record = absent by default
+          row.push('✗');
+          absentCount++;
         }
       }
 
