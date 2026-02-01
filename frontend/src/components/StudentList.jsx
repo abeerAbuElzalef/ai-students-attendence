@@ -16,6 +16,7 @@ export default function StudentList({ classId, className, classes, onStudentChan
   const [newStudent, setNewStudent] = useState({ name: '', notes: '' });
   const [bulkText, setBulkText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('firstName'); // 'firstName' or 'lastName'
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -28,17 +29,24 @@ export default function StudentList({ classId, className, classes, onStudentChan
     }
   }, [classId]);
 
-  // Hebrew-aware alphabetical sort
-  const sortStudentsAlphabetically = (studentList) => {
-    return [...studentList].sort((a, b) => 
-      a.name.localeCompare(b.name, 'he')
-    );
+  // Hebrew-aware alphabetical sort by first or last name
+  const sortStudents = (studentList, sortType) => {
+    return [...studentList].sort((a, b) => {
+      if (sortType === 'lastName') {
+        // Get last word as last name
+        const aLastName = a.name.split(' ').pop() || a.name;
+        const bLastName = b.name.split(' ').pop() || b.name;
+        return aLastName.localeCompare(bLastName, 'he');
+      }
+      // Default: sort by first name (full name from start)
+      return a.name.localeCompare(b.name, 'he');
+    });
   };
 
   const loadStudents = async () => {
     try {
       const response = await studentApi.getAll(classId);
-      const sortedStudents = sortStudentsAlphabetically(response.data);
+      const sortedStudents = sortStudents(response.data, sortBy);
       setStudents(sortedStudents);
       // Notify parent about student count change
       onStudentChange?.(sortedStudents.length);
@@ -47,6 +55,13 @@ export default function StudentList({ classId, className, classes, onStudentChan
     }
     setLoading(false);
   };
+
+  // Re-sort when sortBy changes
+  useEffect(() => {
+    if (students.length > 0) {
+      setStudents(sortStudents(students, sortBy));
+    }
+  }, [sortBy]);
 
   const handleAddStudent = async () => {
     if (!newStudent.name.trim()) {
@@ -243,24 +258,54 @@ export default function StudentList({ classId, className, classes, onStudentChan
           </div>
         </div>
 
-        {/* Search with clear button */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="חיפוש תלמיד..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-10"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-              title="נקה חיפוש"
-            >
-              <FiX size={18} />
-            </button>
-          )}
+        {/* Search and Sort */}
+        <div className="flex gap-4 items-center">
+          {/* Search with clear button */}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="חיפוש תלמיד..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                title="נקה חיפוש"
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
+
+          {/* Sort Options */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-400">מיון:</span>
+            <div className="flex rounded-xl overflow-hidden border border-slate-600">
+              <button
+                onClick={() => setSortBy('firstName')}
+                className={`px-3 py-2 text-sm transition-colors ${
+                  sortBy === 'firstName' 
+                    ? 'bg-primary-600 text-white' 
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                שם פרטי
+              </button>
+              <button
+                onClick={() => setSortBy('lastName')}
+                className={`px-3 py-2 text-sm transition-colors ${
+                  sortBy === 'lastName' 
+                    ? 'bg-primary-600 text-white' 
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                שם משפחה
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

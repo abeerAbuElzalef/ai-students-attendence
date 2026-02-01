@@ -23,10 +23,17 @@ module.exports = async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const id = url.searchParams.get('id');
 
-    // GET /api/classes - List all classes
+    // GET /api/classes - List all classes with student count
     if (!id && req.method === 'GET') {
       const classes = await Class.find({ teacher: teacherId }).sort({ createdAt: -1 });
-      return res.json(classes);
+      
+      // Add student count to each class
+      const classesWithCount = await Promise.all(classes.map(async (classDoc) => {
+        const studentCount = await Student.countDocuments({ class: classDoc._id });
+        return { ...classDoc.toObject(), studentCount };
+      }));
+      
+      return res.json(classesWithCount);
     }
 
     // POST /api/classes - Create new class
