@@ -19,11 +19,9 @@ module.exports = async (req, res) => {
   try {
     await connectToDatabase();
     
-    const urlParts = req.url.split('?')[0].split('/');
-    // /api/admin/teachers or /api/admin/teachers/123
-    // /api/admin/classes or /api/admin/classes/123
-    const resource = urlParts[3]; // teachers or classes
-    const id = urlParts[4] || null;
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const resource = url.searchParams.get('resource'); // teachers or classes
+    const id = url.searchParams.get('id');
 
     // GET /api/admin/teachers
     if (resource === 'teachers' && !id && req.method === 'GET') {

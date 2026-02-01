@@ -20,9 +20,8 @@ module.exports = async (req, res) => {
     await connectToDatabase();
     const teacherId = authResult.teacher._id;
     
-    // Extract ID from URL if present: /api/classes/123
-    const urlParts = req.url.split('?')[0].split('/');
-    const id = urlParts.length > 3 ? urlParts[3] : null;
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const id = url.searchParams.get('id');
 
     // GET /api/classes - List all classes
     if (!id && req.method === 'GET') {

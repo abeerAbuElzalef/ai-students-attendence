@@ -21,11 +21,12 @@ module.exports = async (req, res) => {
     const teacherId = authResult.teacher._id;
     
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const path = url.pathname;
+    const action = url.searchParams.get('action');
+    const id = url.searchParams.get('id');
     const classId = url.searchParams.get('classId');
 
     // POST /api/students/import - Import students
-    if (path === '/api/students/import' && req.method === 'POST') {
+    if (action === 'import' && req.method === 'POST') {
       const { classId: bodyClassId, students } = req.body;
       if (!bodyClassId || !students || !Array.isArray(students)) {
         return res.status(400).json({ error: 'classId and students array are required' });
@@ -45,10 +46,6 @@ module.exports = async (req, res) => {
       }
       return res.status(201).json({ message: `${createdStudents.length} students imported`, students: createdStudents });
     }
-
-    // Extract ID from URL: /api/students/123
-    const urlParts = path.split('/');
-    const id = urlParts.length > 3 && urlParts[3] !== 'import' ? urlParts[3] : null;
 
     // GET /api/students - List all students
     if (!id && req.method === 'GET') {

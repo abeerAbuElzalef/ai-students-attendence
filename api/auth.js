@@ -11,21 +11,30 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const path = req.url.split('?')[0];
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const action = url.searchParams.get('action');
 
   try {
     await connectToDatabase();
 
     // POST /api/auth/register
-    if (path === '/api/auth/register' && req.method === 'POST') {
+    if (action === 'register' && req.method === 'POST') {
       const { name, email, password } = req.body;
+      
+      if (!name || !email || !password) {
+        return res.status(400).json({ error: 'Name, email, and password are required' });
+      }
+      
       const existingTeacher = await Teacher.findOne({ email });
       if (existingTeacher) {
         return res.status(400).json({ error: 'Email already registered' });
       }
+      
       const teacher = new Teacher({ name, email, password });
       await teacher.save();
+      
       const token = generateToken(teacher);
+      
       return res.status(201).json({
         message: 'Registration successful',
         token,
@@ -34,17 +43,25 @@ module.exports = async (req, res) => {
     }
 
     // POST /api/auth/login
-    if (path === '/api/auth/login' && req.method === 'POST') {
+    if (action === 'login' && req.method === 'POST') {
       const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
+      
       const teacher = await Teacher.findOne({ email });
       if (!teacher) {
         return res.status(401).json({ error: 'Invalid email or password' });
       }
+      
       const isMatch = await teacher.comparePassword(password);
       if (!isMatch) {
         return res.status(401).json({ error: 'Invalid email or password' });
       }
+      
       const token = generateToken(teacher);
+      
       return res.json({
         message: 'Login successful',
         token,
@@ -53,7 +70,7 @@ module.exports = async (req, res) => {
     }
 
     // GET /api/auth/me
-    if (path === '/api/auth/me' && req.method === 'GET') {
+    if (action === 'me' && req.method === 'GET') {
       const authResult = await verifyAuth(req);
       if (authResult.error) {
         return res.status(authResult.status).json({ error: authResult.error });
@@ -63,9 +80,9 @@ module.exports = async (req, res) => {
       });
     }
 
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: 'Auth endpoint not found', action: action });
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error: ' + error.message });
   }
 };

@@ -25,12 +25,9 @@ module.exports = async (req, res) => {
     await connectToDatabase();
     const teacherId = authResult.teacher._id;
     
-    // Extract year and month from URL: /api/calendar/2026/1
-    const urlParts = req.url.split('?')[0].split('/');
-    const year = parseInt(urlParts[3]);
-    const month = parseInt(urlParts[4]);
-    
     const url = new URL(req.url, `http://${req.headers.host}`);
+    const year = parseInt(url.searchParams.get('year'));
+    const month = parseInt(url.searchParams.get('month'));
     const classId = url.searchParams.get('classId');
 
     if (!year || !month) {

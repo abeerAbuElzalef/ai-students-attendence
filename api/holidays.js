@@ -18,10 +18,9 @@ module.exports = async (req, res) => {
   try {
     await connectToDatabase();
     
-    // Extract year and month from URL: /api/holidays/2026/1
-    const urlParts = req.url.split('?')[0].split('/');
-    const year = parseInt(urlParts[3]);
-    const month = parseInt(urlParts[4]);
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const year = parseInt(url.searchParams.get('year'));
+    const month = parseInt(url.searchParams.get('month'));
 
     if (!year || !month) {
       return res.status(400).json({ error: 'Year and month are required' });
